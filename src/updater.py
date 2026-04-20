@@ -6,10 +6,10 @@ import subprocess
 import shutil
 from PySide6.QtCore import QThread, Signal
 
-VERSION = "1.0.1"
+VERSION = "1.0.0"
 # Ganti 'main' dengan nama branch Anda (biasanya 'main' atau 'master')
 # Ganti 'nama_repo' dengan nama repository tempat Anda menyimpan version.json
-UPDATE_URL = "https://raw.githubusercontent.com/tomychaky09-cmd/isak_35_updates/main/version.json"
+UPDATE_URL = "https://raw.githubusercontent.com/tomychaky09-cmd/isak_35_updates/master/version.json"
 
 class UpdateChecker(QThread):
     update_available = Signal(dict)
