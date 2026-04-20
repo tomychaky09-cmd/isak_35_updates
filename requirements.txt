@@ -1,0 +1,7 @@
+PySide6
+pandas
+openpyxl
+watchdog
+mysql-connector-python
+requests
+pyodbc

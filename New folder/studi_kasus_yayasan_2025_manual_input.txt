@@ -1,0 +1,1631 @@
+### Studi Kasus Yayasan ISAK 35: Tahun 2025
+
+**Tujuan:** Memandu pengguna dalam menginput transaksi manual dan memverifikasi hasil laporan keuangan.
+
+---
+
+#### **Bagian 1: Bagan Akun (Chart of Accounts - COA) Studi Kasus**
+
+Berikut adalah daftar Bagan Akun yang akan digunakan untuk studi kasus ini. Anda harus memastikan akun-akun ini ada di aplikasi Anda sebelum menginput transaksi. Jika belum ada, Anda bisa menambahkannya melalui menu "Bagan Akun (COA)".
+
+| Kode Akun | Nama Akun                       | Tipe Akun     | Kategori Akun           |
+| :-------- | :------------------------------ | :------------ | :---------------------- |
+| 1000      | Kas                             | Asset         | Lancar                  |
+| 1010      | Bank - Mandiri                  | Asset         | Lancar                  |
+| 1020      | Piutang Sumbangan               | Asset         | Lancar                  |
+| 1030      | Persediaan Perlengkapan Kantor  | Asset         | Lancar                  |
+| 1100      | Tanah                           | Asset         | Tidak Lancar            |
+| 1110      | Bangunan                        | Asset         | Tidak Lancar            |
+| 1120      | Akumulasi Penyusutan Bangunan   | Asset         | Tidak Lancar (Kontra)   |
+| 1130      | Peralatan Kantor                | Asset         | Tidak Lancar            |
+| 1140      | Akumulasi Penyusutan Peralatan  | Asset         | Tidak Lancar (Kontra)   |
+| 2000      | Utang Usaha                     | Liability     | Lancar                  |
+| 2010      | Utang Gaji                      | Liability     | Lancar                  |
+| 2020      | Pendapatan Diterima di Muka     | Liability     | Lancar                  |
+| 2100      | Utang Bank Jangka Panjang       | Liability     | Tidak Lancar            |
+| 3000      | Aset Neto Tidak Terbatas        | Asset Net     | Tidak Terbatas          |
+| 3010      | Aset Neto Terbatas Waktu        | Asset Net     | Terbatas Waktu          |
+| 3020      | Aset Neto Terbatas Permanen     | Asset Net     | Terbatas Permanen       |
+| 4000      | Pendapatan Sumbangan Tidak Terbatas | Revenue       | Tidak Terbatas          |
+| 4010      | Pendapatan Sumbangan Terbatas Waktu | Revenue       | Terbatas Waktu          |
+| 4020      | Pendapatan Jasa Program         | Revenue       | Tidak Terbatas          |
+| 5000      | Beban Gaji & Tunjangan          | Expense       | Program                 |
+| 5010      | Beban Program Pendidikan        | Expense       | Program                 |
+| 5020      | Beban Program Kesehatan         | Expense       | Program                 |
+| 6000      | Beban Administrasi & Umum       | Expense       | Administrasi & Umum     |
+| 6010      | Beban Sewa Kantor               | Expense       | Administrasi & Umum     |
+| 6020      | Beban Perlengkapan Kantor       | Expense       | Administrasi & Umum     |
+| 6030      | Beban Utilitas                  | Expense       | Administrasi & Umum     |
+| 6040      | Beban Penyusutan Bangunan       | Expense       | Administrasi & Umum     |
+| 6050      | Beban Penyusutan Peralatan      | Expense       | Administrasi & Umum     |
+| 7000      | Beban Bunga Bank                | Expense       | Lain-lain               |
+
+---
+
+#### **Bagian 2: Saldo Awal (Beginning Balance) - 1 Januari 2025**
+
+Berikut adalah saldo awal Yayasan ISAK 35 per 1 Januari 2025. Anda dapat menginput ini melalui fitur "Saldo Awal" di aplikasi atau sebagai entri jurnal umum khusus dengan tanggal 2025-01-01 dan deskripsi "Saldo Awal Tahun Buku 2025".
+
+| Kode Akun | Nama Akun                       | Debit (Rp) | Kredit (Rp) |
+| :-------- | :------------------------------ | :--------- | :---------- |
+| 1000      | Kas                             | 5.000.000  |             |
+| 1010      | Bank - Mandiri                  | 25.000.000 |             |
+| 1020      | Piutang Sumbangan               | 2.000.000  |             |
+| 1030      | Persediaan Perlengkapan Kantor  | 1.000.000  |             |
+| 1110      | Bangunan                        | 100.000.000|             |
+| 1120      | Akumulasi Penyusutan Bangunan   |            | 10.000.000  |
+| 1130      | Peralatan Kantor                | 15.000.000 |             |
+| 1140      | Akumulasi Penyusutan Peralatan  |            | 3.000.000   |
+| 2000      | Utang Usaha                     |            | 1.500.000   |
+| 2100      | Utang Bank Jangka Panjang       |            | 50.000.000  |
+| 3000      | Aset Neto Tidak Terbatas        |            | 70.500.000  |
+| 3010      | Aset Neto Terbatas Waktu        |            | 10.000.000  |
+| **TOTAL** |                                 | **148.000.000** | **148.000.000** |
+
+**Panduan Input Saldo Awal:**
+
+1.  Buka aplikasi.
+2.  Navigasi ke menu "Saldo Awal" (jika ada) atau "Jurnal Umum" untuk membuat entri baru.
+3.  **Tanggal:** 2025-01-01
+4.  **Deskripsi:** Saldo Awal Tahun Buku 2025
+5.  **Nomor Referensi:** SA-2025
+6.  Input setiap baris akun sesuai dengan tabel di atas, pastikan jumlah Debit dan Kredit sesuai.
+7.  Simpan entri jurnal.
+
+---
+
+#### **Bagian 3: Transaksi Bulanan - Januari 2025**
+
+Berikut adalah transaksi untuk bulan Januari 2025. Anda akan menginput ini melalui menu "Jurnal Umum" di aplikasi.
+
+**Transaksi 1: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-01-05
+*   **Deskripsi:** Penerimaan sumbangan tunai dari donatur umum
+*   **Nomor Referensi:** SUMB-001
+*   **Detail:**
+    *   Debit: 1000 - Kas (Rp 10.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 10.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 1:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-01-05.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai dari donatur umum".
+4.  **Nomor Referensi:** Ketik "SUMB-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Ketik "10000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "10000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 2: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-01-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Januari
+*   **Nomor Referensi:** GJI-001
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 2:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-01-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Januari".
+4.  **Nomor Referensi:** Ketik "GJI-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 3: Pembelian Perlengkapan Kantor Secara Kredit**
+*   **Tanggal:** 2025-01-28
+*   **Deskripsi:** Pembelian perlengkapan kantor dari Toko ABC secara kredit
+*   **Nomor Referensi:** BELI-001
+*   **Detail:**
+    *   Debit: 1030 - Persediaan Perlengkapan Kantor (Rp 1.500.000)
+    *   Kredit: 2000 - Utang Usaha (Rp 1.500.000)
+*   **Aktivitas Arus Kas:** Biarkan kosong (karena ini transaksi non-kas)
+
+**Panduan Input Transaksi 3:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-01-28.
+3.  **Deskripsi:** Ketik "Pembelian perlengkapan kantor dari Toko ABC secara kredit".
+4.  **Nomor Referensi:** Ketik "BELI-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "1030 - Persediaan Perlengkapan Kantor"
+    *   Debit: Ketik "1500000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "2000 - Utang Usaha"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "1500000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 4: Penerimaan Sumbangan Terbatas Waktu**
+*   **Tanggal:** 2025-01-30
+*   **Deskripsi:** Penerimaan sumbangan terbatas waktu untuk program pendidikan
+*   **Nomor Referensi:** SUMB-002
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 5.000.000)
+    *   Kredit: 4010 - Pendapatan Sumbangan Terbatas Waktu (Rp 5.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 4:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-01-30.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan terbatas waktu untuk program pendidikan".
+4.  **Nomor Referensi:** Ketik "SUMB-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "5000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4010 - Pendapatan Sumbangan Terbatas Waktu"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "5000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 4: Transaksi Bulanan - Februari 2025**
+
+**Transaksi 5: Pembayaran Utang Usaha**
+*   **Tanggal:** 2025-02-10
+*   **Deskripsi:** Pembayaran utang kepada Toko ABC untuk pembelian perlengkapan
+*   **Nomor Referensi:** BYR-UTG-001
+*   **Detail:**
+    *   Debit: 2000 - Utang Usaha (Rp 1.500.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 1.500.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 5:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-02-10.
+3.  **Deskripsi:** Ketik "Pembayaran utang kepada Toko ABC untuk pembelian perlengkapan".
+4.  **Nomor Referensi:** Ketik "BYR-UTG-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "2000 - Utang Usaha"
+    *   Debit: Ketik "1500000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "1500000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 6: Penerimaan Sumbangan Terbatas Permanen (untuk Pembelian Tanah)**
+*   **Tanggal:** 2025-02-15
+*   **Deskripsi:** Penerimaan sumbangan tunai untuk pembelian tanah
+*   **Nomor Referensi:** SUMB-003
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 20.000.000)
+    *   Kredit: 3020 - Aset Neto Terbatas Permanen (Rp 20.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan Sumbangan yang Dibatasi untuk Bangunan (gunakan ini sebagai proxy untuk aset tetap)
+
+**Panduan Input Transaksi 6:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-02-15.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai untuk pembelian tanah".
+4.  **Nomor Referensi:** Ketik "SUMB-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "20000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan Sumbangan yang Dibatasi untuk Bangunan"
+6.  **Baris 2:**
+    *   Pilih Akun: "3020 - Aset Neto Terbatas Permanen"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "20000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 7: Pembelian Tanah**
+*   **Tanggal:** 2025-02-20
+*   **Deskripsi:** Pembelian tanah menggunakan dana sumbangan terbatas permanen
+*   **Nomor Referensi:** BELI-TNH-001
+*   **Detail:**
+    *   Debit: 1100 - Tanah (Rp 20.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 20.000.000)
+*   **Aktivitas Arus Kas:** Pembelian Peralatan Kantor Baru (gunakan ini sebagai proxy untuk pembelian aset tetap)
+
+**Panduan Input Transaksi 7:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-02-20.
+3.  **Deskripsi:** Ketik "Pembelian tanah menggunakan dana sumbangan terbatas permanen".
+4.  **Nomor Referensi:** Ketik "BELI-TNH-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "1100 - Tanah"
+    *   Debit: Ketik "20000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "20000000"
+    *   Aktivitas Arus Kas: Pilih "Pembelian Peralatan Kantor Baru"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 8: Pembayaran Beban Sewa Kantor**
+*   **Tanggal:** 2025-02-28
+*   **Deskripsi:** Pembayaran sewa kantor bulan Februari
+*   **Nomor Referensi:** SEWA-001
+*   **Detail:**
+    *   Debit: 6010 - Beban Sewa Kantor (Rp 2.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Sewa Gedung
+
+**Panduan Input Transaksi 8:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-02-28.
+3.  **Deskripsi:** Ketik "Pembayaran sewa kantor bulan Februari".
+4.  **Nomor Referensi:** Ketik "SEWA-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "6010 - Beban Sewa Kantor"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Sewa Gedung"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 5: Transaksi Bulanan - Maret 2025**
+
+**Transaksi 9: Penerimaan Sumbangan Tunai Terbatas Waktu (Pencairan Piutang)**
+*   **Tanggal:** 2025-03-05
+*   **Deskripsi:** Penerimaan kas dari piutang sumbangan yang sebelumnya diakui
+*   **Nomor Referensi:** PIUT-001
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 2.000.000)
+    *   Kredit: 1020 - Piutang Sumbangan (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 9:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-03-05.
+3.  **Deskripsi:** Ketik "Penerimaan kas dari piutang sumbangan yang sebelumnya diakui".
+4.  **Nomor Referensi:** Ketik "PIUT-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "1020 - Piutang Sumbangan"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 10: Pembelian Perlengkapan Kantor Tunai**
+*   **Tanggal:** 2025-03-10
+*   **Deskripsi:** Pembelian perlengkapan kantor secara tunai
+*   **Nomor Referensi:** BELI-PLKP-002
+*   **Detail:**
+    *   Debit: 1030 - Persediaan Perlengkapan Kantor (Rp 750.000)
+    *   Kredit: 1000 - Kas (Rp 750.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 10:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-03-10.
+3.  **Deskripsi:** Ketik "Pembelian perlengkapan kantor secara tunai".
+4.  **Nomor Referensi:** Ketik "BELI-PLKP-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "1030 - Persediaan Perlengkapan Kantor"
+    *   Debit: Ketik "750000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "750000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 11: Pembayaran Beban Program Pendidikan**
+*   **Tanggal:** 2025-03-20
+*   **Deskripsi:** Pembayaran biaya operasional program pendidikan
+*   **Nomor Referensi:** PROG-PEND-001
+*   **Detail:**
+    *   Debit: 5010 - Beban Program Pendidikan (Rp 3.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 3.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 11:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-03-20.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program pendidikan".
+4.  **Nomor Referensi:** Ketik "PROG-PEND-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "5010 - Beban Program Pendidikan"
+    *   Debit: Ketik "3000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "3000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 12: Pengakuan Pendapatan Jasa Program**
+*   **Tanggal:** 2025-03-25
+*   **Deskripsi:** Pengakuan pendapatan dari jasa program yang telah diselesaikan
+*   **Nomor Referensi:** JASA-PROG-001
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 4.000.000)
+    *   Kredit: 4020 - Pendapatan Jasa Program (Rp 4.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Jasa Layanan/Unit Bisnis
+
+**Panduan Input Transaksi 12:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-03-25.
+3.  **Deskripsi:** Ketik "Pengakuan pendapatan dari jasa program yang telah diselesaikan".
+4.  **Nomor Referensi:** Ketik "JASA-PROG-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "4000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Jasa Layanan/Unit Bisnis"
+6.  **Baris 2:**
+    *   Pilih Akun: "4020 - Pendapatan Jasa Program"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "4000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 6: Transaksi Bulanan - April 2025**
+
+**Transaksi 13: Pembayaran Beban Utilitas**
+*   **Tanggal:** 2025-04-05
+*   **Deskripsi:** Pembayaran tagihan listrik dan air bulan Maret
+*   **Nomor Referensi:** UTIL-001
+*   **Detail:**
+    *   Debit: 6030 - Beban Utilitas (Rp 800.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 800.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 13:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-04-05.
+3.  **Deskripsi:** Ketik "Pembayaran tagihan listrik dan air bulan Maret".
+4.  **Nomor Referensi:** Ketik "UTIL-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "6030 - Beban Utilitas"
+    *   Debit: Ketik "800000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "800000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 14: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-04-15
+*   **Deskripsi:** Penerimaan sumbangan tunai dari donatur individu
+*   **Nomor Referensi:** SUMB-004
+*   **Detail:**
+    *   Debit: 1000 - Kas (Rp 3.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 3.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 14:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-04-15.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai dari donatur individu".
+4.  **Nomor Referensi:** Ketik "SUMB-004".
+5.  **Baris 1:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Ketik "3000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "3000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 15: Pembayaran Beban Program Kesehatan**
+*   **Tanggal:** 2025-04-20
+*   **Deskripsi:** Pembayaran biaya operasional program kesehatan
+*   **Nomor Referensi:** PROG-KES-001
+*   **Detail:**
+    *   Debit: 5020 - Beban Program Kesehatan (Rp 2.500.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 2.500.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 15:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-04-20.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program kesehatan".
+4.  **Nomor Referensi:** Ketik "PROG-KES-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "5020 - Beban Program Kesehatan"
+    *   Debit: Ketik "2500000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2500000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 16: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-04-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan April
+*   **Nomor Referensi:** GJI-002
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 16:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-04-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan April".
+4.  **Nomor Referensi:** Ketik "GJI-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 7: Transaksi Bulanan - Mei 2025**
+
+**Transaksi 17: Penerimaan Pendapatan Jasa Program**
+*   **Tanggal:** 2025-05-10
+*   **Deskripsi:** Penerimaan pendapatan dari jasa program yang telah diberikan
+*   **Nomor Referensi:** JASA-PROG-002
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 3.500.000)
+    *   Kredit: 4020 - Pendapatan Jasa Program (Rp 3.500.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Jasa Layanan/Unit Bisnis
+
+**Panduan Input Transaksi 17:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-05-10.
+3.  **Deskripsi:** Ketik "Penerimaan pendapatan dari jasa program yang telah diberikan".
+4.  **Nomor Referensi:** Ketik "JASA-PROG-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "3500000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Jasa Layanan/Unit Bisnis"
+6.  **Baris 2:**
+    *   Pilih Akun: "4020 - Pendapatan Jasa Program"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "3500000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 18: Pembayaran Beban Administrasi & Umum**
+*   **Tanggal:** 2025-05-18
+*   **Deskripsi:** Pembayaran berbagai beban administrasi dan umum (misal: ATK, kebersihan)
+*   **Nomor Referensi:** ADM-001
+*   **Detail:**
+    *   Debit: 6000 - Beban Administrasi & Umum (Rp 1.200.000)
+    *   Kredit: 1000 - Kas (Rp 1.200.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 18:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-05-18.
+3.  **Deskripsi:** Ketik "Pembayaran berbagai beban administrasi dan umum (misal: ATK, kebersihan)".
+4.  **Nomor Referensi:** Ketik "ADM-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "6000 - Beban Administrasi & Umum"
+    *   Debit: Ketik "1200000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "1200000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 19: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-05-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Mei
+*   **Nomor Referensi:** GJI-003
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 19:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-05-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Mei".
+4.  **Nomor Referensi:** Ketik "GJI-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 20: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-05-30
+*   **Deskripsi:** Penerimaan sumbangan tunai dari acara penggalangan dana
+*   **Nomor Referensi:** SUMB-005
+*   **Detail:**
+    *   Debit: 1000 - Kas (Rp 8.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 8.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 20:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-05-30.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai dari acara penggalangan dana".
+4.  **Nomor Referensi:** Ketik "SUMB-005".
+5.  **Baris 1:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Ketik "8000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "8000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 8: Transaksi Bulanan - Juni 2025**
+
+**Transaksi 21: Pembayaran Beban Sewa Kantor**
+*   **Tanggal:** 2025-06-01
+*   **Deskripsi:** Pembayaran sewa kantor bulan Juni
+*   **Nomor Referensi:** SEWA-002
+*   **Detail:**
+    *   Debit: 6010 - Beban Sewa Kantor (Rp 2.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Sewa Gedung
+
+**Panduan Input Transaksi 21:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-06-01.
+3.  **Deskripsi:** Ketik "Pembayaran sewa kantor bulan Juni".
+4.  **Nomor Referensi:** Ketik "SEWA-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "6010 - Beban Sewa Kantor"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Sewa Gedung"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 22: Penerimaan Sumbangan Terbatas Waktu**
+*   **Tanggal:** 2025-06-10
+*   **Deskripsi:** Penerimaan sumbangan tunai terbatas waktu untuk program kesehatan
+*   **Nomor Referensi:** SUMB-006
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 6.000.000)
+    *   Kredit: 4010 - Pendapatan Sumbangan Terbatas Waktu (Rp 6.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 22:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-06-10.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai terbatas waktu untuk program kesehatan".
+4.  **Nomor Referensi:** Ketik "SUMB-006".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "6000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4010 - Pendapatan Sumbangan Terbatas Waktu"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "6000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 23: Pembayaran Beban Program Kesehatan**
+*   **Tanggal:** 2025-06-20
+*   **Deskripsi:** Pembayaran biaya operasional program kesehatan
+*   **Nomor Referensi:** PROG-KES-002
+*   **Detail:**
+    *   Debit: 5020 - Beban Program Kesehatan (Rp 4.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 4.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 23:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-06-20.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program kesehatan".
+4.  **Nomor Referensi:** Ketik "PROG-KES-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "5020 - Beban Program Kesehatan"
+    *   Debit: Ketik "4000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "4000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 24: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-06-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Juni
+*   **Nomor Referensi:** GJI-004
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 24:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-06-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Juni".
+4.  **Nomor Referensi:** Ketik "GJI-004".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 9: Transaksi Bulanan - Juli 2025**
+
+**Transaksi 25: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-07-05
+*   **Deskripsi:** Penerimaan sumbangan tunai dari donatur perusahaan
+*   **Nomor Referensi:** SUMB-007
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 15.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 15.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 25:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-07-05.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai dari donatur perusahaan".
+4.  **Nomor Referensi:** Ketik "SUMB-007".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "15000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "15000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 26: Pembayaran Beban Administrasi & Umum**
+*   **Tanggal:** 2025-07-15
+*   **Deskripsi:** Pembayaran biaya operasional kantor (misal: internet, telepon)
+*   **Nomor Referensi:** ADM-002
+*   **Detail:**
+    *   Debit: 6000 - Beban Administrasi & Umum (Rp 900.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 900.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 26:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-07-15.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional kantor (misal: internet, telepon)".
+4.  **Nomor Referensi:** Ketik "ADM-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "6000 - Beban Administrasi & Umum"
+    *   Debit: Ketik "900000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "900000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 27: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-07-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Juli
+*   **Nomor Referensi:** GJI-005
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 27:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-07-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Juli".
+4.  **Nomor Referensi:** Ketik "GJI-005".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 28: Penerimaan Pendapatan Jasa Program**
+*   **Tanggal:** 2025-07-30
+*   **Deskripsi:** Penerimaan pendapatan dari jasa program (pelatihan)
+*   **Nomor Referensi:** JASA-PROG-003
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 6.000.000)
+    *   Kredit: 4020 - Pendapatan Jasa Program (Rp 6.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Jasa Layanan/Unit Bisnis
+
+**Panduan Input Transaksi 28:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-07-30.
+3.  **Deskripsi:** Ketik "Penerimaan pendapatan dari jasa program (pelatihan)".
+4.  **Nomor Referensi:** Ketik "JASA-PROG-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "6000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Jasa Layanan/Unit Bisnis"
+6.  **Baris 2:**
+    *   Pilih Akun: "4020 - Pendapatan Jasa Program"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "6000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 10: Transaksi Bulanan - Agustus 2025**
+
+**Transaksi 29: Pembayaran Beban Sewa Kantor**
+*   **Tanggal:** 2025-08-01
+*   **Deskripsi:** Pembayaran sewa kantor bulan Agustus
+*   **Nomor Referensi:** SEWA-003
+*   **Detail:**
+    *   Debit: 6010 - Beban Sewa Kantor (Rp 2.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Sewa Gedung
+
+**Panduan Input Transaksi 29:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-08-01.
+3.  **Deskripsi:** Ketik "Pembayaran sewa kantor bulan Agustus".
+4.  **Nomor Referensi:** Ketik "SEWA-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "6010 - Beban Sewa Kantor"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Sewa Gedung"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 30: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-08-10
+*   **Deskripsi:** Penerimaan sumbangan tunai dari donatur perorangan
+*   **Nomor Referensi:** SUMB-008
+*   **Detail:**
+    *   Debit: 1000 - Kas (Rp 4.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 4.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 30:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-08-10.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai dari donatur perorangan".
+4.  **Nomor Referensi:** Ketik "SUMB-008".
+5.  **Baris 1:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Ketik "4000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "4000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 31: Pembayaran Beban Program Pendidikan**
+*   **Tanggal:** 2025-08-20
+*   **Deskripsi:** Pembayaran biaya operasional program pendidikan
+*   **Nomor Referensi:** PROG-PEND-002
+*   **Detail:**
+    *   Debit: 5010 - Beban Program Pendidikan (Rp 3.500.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 3.500.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 31:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-08-20.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program pendidikan".
+4.  **Nomor Referensi:** Ketik "PROG-PEND-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "5010 - Beban Program Pendidikan"
+    *   Debit: Ketik "3500000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "3500000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 32: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-08-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Agustus
+*   **Nomor Referensi:** GJI-006
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 32:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-08-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Agustus".
+4.  **Nomor Referensi:** Ketik "GJI-006".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 11: Transaksi Bulanan - September 2025**
+
+**Transaksi 33: Pembayaran Beban Utilitas**
+*   **Tanggal:** 2025-09-05
+*   **Deskripsi:** Pembayaran tagihan listrik dan air bulan Agustus
+*   **Nomor Referensi:** UTIL-002
+*   **Detail:**
+    *   Debit: 6030 - Beban Utilitas (Rp 850.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 850.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 33:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-09-05.
+3.  **Deskripsi:** Ketik "Pembayaran tagihan listrik dan air bulan Agustus".
+4.  **Nomor Referensi:** Ketik "UTIL-002".
+5.  **Baris 1:**
+    *   Pilih Akun: "6030 - Beban Utilitas"
+    *   Debit: Ketik "850000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "850000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 34: Penerimaan Sumbangan Tunai Terbatas Waktu**
+*   **Tanggal:** 2025-09-15
+*   **Deskripsi:** Penerimaan sumbangan tunai terbatas waktu untuk program pengembangan
+*   **Nomor Referensi:** SUMB-009
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 7.000.000)
+    *   Kredit: 4010 - Pendapatan Sumbangan Terbatas Waktu (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 34:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-09-15.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai terbatas waktu untuk program pengembangan".
+4.  **Nomor Referensi:** Ketik "SUMB-009".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4010 - Pendapatan Sumbangan Terbatas Waktu"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 35: Pembayaran Beban Program Pendidikan**
+*   **Tanggal:** 2025-09-20
+*   **Deskripsi:** Pembayaran biaya operasional program pendidikan
+*   **Nomor Referensi:** PROG-PEND-003
+*   **Detail:**
+    *   Debit: 5010 - Beban Program Pendidikan (Rp 4.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 4.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 35:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-09-20.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program pendidikan".
+4.  **Nomor Referensi:** Ketik "PROG-PEND-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "5010 - Beban Program Pendidikan"
+    *   Debit: Ketik "4000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "4000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 36: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-09-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan September
+*   **Nomor Referensi:** GJI-007
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 36:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-09-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan September".
+4.  **Nomor Referensi:** Ketik "GJI-007".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 12: Transaksi Bulanan - Oktober 2025**
+
+**Transaksi 37: Pembayaran Beban Sewa Kantor**
+*   **Tanggal:** 2025-10-01
+*   **Deskripsi:** Pembayaran sewa kantor bulan Oktober
+*   **Nomor Referensi:** SEWA-004
+*   **Detail:**
+    *   Debit: 6010 - Beban Sewa Kantor (Rp 2.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Sewa Gedung
+
+**Panduan Input Transaksi 37:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-10-01.
+3.  **Deskripsi:** Ketik "Pembayaran sewa kantor bulan Oktober".
+4.  **Nomor Referensi:** Ketik "SEWA-004".
+5.  **Baris 1:**
+    *   Pilih Akun: "6010 - Beban Sewa Kantor"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Sewa Gedung"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 38: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-10-10
+*   **Deskripsi:** Penerimaan sumbangan tunai dari donatur perorangan
+*   **Nomor Referensi:** SUMB-010
+*   **Detail:**
+    *   Debit: 1000 - Kas (Rp 5.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 5.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 38:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-10-10.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai dari donatur perorangan".
+4.  **Nomor Referensi:** Ketik "SUMB-010".
+5.  **Baris 1:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Ketik "5000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "5000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 39: Pembayaran Beban Program Kesehatan**
+*   **Tanggal:** 2025-10-20
+*   **Deskripsi:** Pembayaran biaya operasional program kesehatan
+*   **Nomor Referensi:** PROG-KES-003
+*   **Detail:**
+    *   Debit: 5020 - Beban Program Kesehatan (Rp 3.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 3.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 39:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-10-20.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program kesehatan".
+4.  **Nomor Referensi:** Ketik "PROG-KES-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "5020 - Beban Program Kesehatan"
+    *   Debit: Ketik "3000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "3000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 40: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-10-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Oktober
+*   **Nomor Referensi:** GJI-008
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 40:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-10-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Oktober".
+4.  **Nomor Referensi:** Ketik "GJI-008".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 13: Transaksi Bulanan - November 2025**
+
+**Transaksi 41: Penerimaan Pendapatan Jasa Program**
+*   **Tanggal:** 2025-11-05
+*   **Deskripsi:** Penerimaan pendapatan dari jasa program (konsultasi)
+*   **Nomor Referensi:** JASA-PROG-004
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 4.500.000)
+    *   Kredit: 4020 - Pendapatan Jasa Program (Rp 4.500.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Jasa Layanan/Unit Bisnis
+
+**Panduan Input Transaksi 41:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-11-05.
+3.  **Deskripsi:** Ketik "Penerimaan pendapatan dari jasa program (konsultasi)".
+4.  **Nomor Referensi:** Ketik "JASA-PROG-004".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "4500000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Jasa Layanan/Unit Bisnis"
+6.  **Baris 2:**
+    *   Pilih Akun: "4020 - Pendapatan Jasa Program"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "4500000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 42: Pembayaran Beban Administrasi & Umum**
+*   **Tanggal:** 2025-11-15
+*   **Deskripsi:** Pembayaran biaya operasional kantor (misal: perbaikan kecil)
+*   **Nomor Referensi:** ADM-003
+*   **Detail:**
+    *   Debit: 6000 - Beban Administrasi & Umum (Rp 700.000)
+    *   Kredit: 1000 - Kas (Rp 700.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Administrasi
+
+**Panduan Input Transaksi 42:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-11-15.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional kantor (misal: perbaikan kecil)".
+4.  **Nomor Referensi:** Ketik "ADM-003".
+5.  **Baris 1:**
+    *   Pilih Akun: "6000 - Beban Administrasi & Umum"
+    *   Debit: Ketik "700000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1000 - Kas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "700000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Administrasi"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 43: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-11-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan November
+*   **Nomor Referensi:** GJI-009
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 43:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-11-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan November".
+4.  **Nomor Referensi:** Ketik "GJI-009".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 44: Penerimaan Sumbangan Tunai Tidak Terbatas**
+*   **Tanggal:** 2025-11-30
+*   **Deskripsi:** Penerimaan sumbangan tunai akhir tahun dari donatur
+*   **Nomor Referensi:** SUMB-011
+*   **Detail:**
+    *   Debit: 1010 - Bank - Mandiri (Rp 10.000.000)
+    *   Kredit: 4000 - Pendapatan Sumbangan Tidak Terbatas (Rp 10.000.000)
+*   **Aktivitas Arus Kas:** Penerimaan dari Sumbangan/Donasi
+
+**Panduan Input Transaksi 44:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-11-30.
+3.  **Deskripsi:** Ketik "Penerimaan sumbangan tunai akhir tahun dari donatur".
+4.  **Nomor Referensi:** Ketik "SUMB-011".
+5.  **Baris 1:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Ketik "10000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Pilih "Penerimaan dari Sumbangan/Donasi"
+6.  **Baris 2:**
+    *   Pilih Akun: "4000 - Pendapatan Sumbangan Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "10000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+#### **Bagian 14: Transaksi Bulanan - Desember 2025**
+
+**Transaksi 45: Pembayaran Beban Sewa Kantor**
+*   **Tanggal:** 2025-12-01
+*   **Deskripsi:** Pembayaran sewa kantor bulan Desember
+*   **Nomor Referensi:** SEWA-005
+*   **Detail:**
+    *   Debit: 6010 - Beban Sewa Kantor (Rp 2.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Sewa Gedung
+
+**Panduan Input Transaksi 45:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-01.
+3.  **Deskripsi:** Ketik "Pembayaran sewa kantor bulan Desember".
+4.  **Nomor Referensi:** Ketik "SEWA-005".
+5.  **Baris 1:**
+    *   Pilih Akun: "6010 - Beban Sewa Kantor"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Sewa Gedung"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 46: Pembayaran Beban Program Pendidikan**
+*   **Tanggal:** 2025-12-15
+*   **Deskripsi:** Pembayaran biaya operasional program pendidikan akhir tahun
+*   **Nomor Referensi:** PROG-PEND-004
+*   **Detail:**
+    *   Debit: 5010 - Beban Program Pendidikan (Rp 5.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 5.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Beban Program
+
+**Panduan Input Transaksi 46:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-15.
+3.  **Deskripsi:** Ketik "Pembayaran biaya operasional program pendidikan akhir tahun".
+4.  **Nomor Referensi:** Ketik "PROG-PEND-004".
+5.  **Baris 1:**
+    *   Pilih Akun: "5010 - Beban Program Pendidikan"
+    *   Debit: Ketik "5000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "5000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Beban Program"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 47: Pembayaran Gaji Karyawan**
+*   **Tanggal:** 2025-12-25
+*   **Deskripsi:** Pembayaran gaji karyawan bulan Desember
+*   **Nomor Referensi:** GJI-010
+*   **Detail:**
+    *   Debit: 5000 - Beban Gaji & Tunjangan (Rp 7.000.000)
+    *   Kredit: 1010 - Bank - Mandiri (Rp 7.000.000)
+*   **Aktivitas Arus Kas:** Pembayaran Kas untuk Gaji dan Karyawan
+
+**Panduan Input Transaksi 47:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-25.
+3.  **Deskripsi:** Ketik "Pembayaran gaji karyawan bulan Desember".
+4.  **Nomor Referensi:** Ketik "GJI-010".
+5.  **Baris 1:**
+    *   Pilih Akun: "5000 - Beban Gaji & Tunjangan"
+    *   Debit: Ketik "7000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1010 - Bank - Mandiri"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "7000000"
+    *   Aktivitas Arus Kas: Pilih "Pembayaran Kas untuk Gaji dan Karyawan"
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 48: Penyesuaian Beban Perlengkapan Kantor (Penggunaan)**
+*   **Tanggal:** 2025-12-31
+*   **Deskripsi:** Penyesuaian penggunaan perlengkapan kantor selama tahun 2025
+*   **Nomor Referensi:** ADJ-PLKP-001
+*   **Detail:**
+    *   Debit: 6020 - Beban Perlengkapan Kantor (Rp 2.000.000)
+    *   Kredit: 1030 - Persediaan Perlengkapan Kantor (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Biarkan kosong (transaksi non-kas)
+
+**Panduan Input Transaksi 48:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-31.
+3.  **Deskripsi:** Ketik "Penyesuaian penggunaan perlengkapan kantor selama tahun 2025".
+4.  **Nomor Referensi:** Ketik "ADJ-PLKP-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "6020 - Beban Perlengkapan Kantor"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1030 - Persediaan Perlengkapan Kantor"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 49: Penyesuaian Beban Penyusutan Bangunan**
+*   **Tanggal:** 2025-12-31
+*   **Deskripsi:** Penyesuaian beban penyusutan bangunan tahun 2025
+*   **Nomor Referensi:** ADJ-SUSUT-BGN-001
+*   **Detail:**
+    *   Debit: 6040 - Beban Penyusutan Bangunan (Rp 5.000.000)
+    *   Kredit: 1120 - Akumulasi Penyusutan Bangunan (Rp 5.000.000)
+*   **Aktivitas Arus Kas:** Biarkan kosong (transaksi non-kas)
+
+**Panduan Input Transaksi 49:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-31.
+3.  **Deskripsi:** Ketik "Penyesuaian beban penyusutan bangunan tahun 2025".
+4.  **Nomor Referensi:** Ketik "ADJ-SUSUT-BGN-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "6040 - Beban Penyusutan Bangunan"
+    *   Debit: Ketik "5000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1120 - Akumulasi Penyusutan Bangunan"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "5000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 50: Penyesuaian Beban Penyusutan Peralatan**
+*   **Tanggal:** 2025-12-31
+*   **Deskripsi:** Penyesuaian beban penyusutan peralatan tahun 2025
+*   **Nomor Referensi:** ADJ-SUSUT-PRL-001
+*   **Detail:**
+    *   Debit: 6050 - Beban Penyusutan Peralatan (Rp 2.000.000)
+    *   Kredit: 1140 - Akumulasi Penyusutan Peralatan (Rp 2.000.000)
+*   **Aktivitas Arus Kas:** Biarkan kosong (transaksi non-kas)
+
+**Panduan Input Transaksi 50:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-31.
+3.  **Deskripsi:** Ketik "Penyesuaian beban penyusutan peralatan tahun 2025".
+4.  **Nomor Referensi:** Ketik "ADJ-SUSUT-PRL-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "6050 - Beban Penyusutan Peralatan"
+    *   Debit: Ketik "2000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "1140 - Akumulasi Penyusutan Peralatan"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "2000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
+
+**Transaksi 51: Pelepasan Pembatasan Aset Neto Terbatas Waktu**
+*   **Tanggal:** 2025-12-31
+*   **Deskripsi:** Pelepasan pembatasan aset neto terbatas waktu seiring dengan penggunaan dana untuk program pendidikan dan kesehatan
+*   **Nomor Referensi:** RLS-ANTW-001
+*   **Detail:**
+    *   Debit: 3010 - Aset Neto Terbatas Waktu (Rp 18.000.000)
+    *   Kredit: 3000 - Aset Neto Tidak Terbatas (Rp 18.000.000)
+*   **Aktivitas Arus Kas:** Biarkan kosong (transaksi non-kas)
+
+**Panduan Input Transaksi 51:**
+
+1.  Buka menu "Jurnal Umum" dan klik "Tambah Jurnal Baru".
+2.  **Tanggal:** Pilih 2025-12-31.
+3.  **Deskripsi:** Ketik "Pelepasan pembatasan aset neto terbatas waktu seiring dengan penggunaan dana untuk program pendidikan dan kesehatan".
+4.  **Nomor Referensi:** Ketik "RLS-ANTW-001".
+5.  **Baris 1:**
+    *   Pilih Akun: "3010 - Aset Neto Terbatas Waktu"
+    *   Debit: Ketik "18000000"
+    *   Kredit: Biarkan kosong
+    *   Aktivitas Arus Kas: Biarkan kosong
+6.  **Baris 2:**
+    *   Pilih Akun: "3000 - Aset Neto Tidak Terbatas"
+    *   Debit: Biarkan kosong
+    *   Kredit: Ketik "18000000"
+    *   Aktivitas Arus Kas: Biarkan kosong
+7.  Pastikan total Debit dan Kredit seimbang.
+8.  Klik "Simpan".
+
+---
