@@ -8,8 +8,15 @@ from PySide6.QtCore import QThread, Signal
 
 VERSION = "1.0.0"
 # Ganti 'main' dengan nama branch Anda (biasanya 'main' atau 'master')
-# Ganti 'nama_repo' dengan nama repository tempat Anda menyimpan version.json
 UPDATE_URL = "https://raw.githubusercontent.com/tomychaky09-cmd/isak_35_updates/master/version.json"
+
+def get_app_dir():
+    if hasattr(sys, '_MEIPASS'):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_exe_path():
+    return sys.executable
 
 class UpdateChecker(QThread):
     update_available = Signal(dict)
@@ -22,9 +29,13 @@ class UpdateChecker(QThread):
             if response.status_code == 200:
                 data = response.json()
                 latest_version = data.get("version", "1.0.0")
+                
+                # Hanya izinkan update jika versi server benar-benar lebih tinggi
                 if latest_version > VERSION:
+                    print(f"[UPDATER] Versi baru ditemukan: {latest_version} (Lokal: {VERSION})")
                     self.update_available.emit(data)
                 else:
+                    print(f"[UPDATER] Aplikasi sudah versi terbaru ({VERSION})")
                     self.no_update.emit()
             else:
                 self.error.emit(f"Server returned status {response.status_code}")
@@ -36,16 +47,27 @@ class DownloadWorker(QThread):
     finished = Signal(str)
     error = Signal(str)
 
-    def __init__(self, download_url):
+    def __init__(self, download_url, target_version):
         super().__init__()
         self.download_url = download_url
+        self.target_version = target_version
 
     def run(self):
         try:
+            # Validasi ulang sebelum download (double check)
+            if self.target_version <= VERSION:
+                self.error.emit("Versi target tidak lebih baru dari versi saat ini.")
+                return
+
             response = requests.get(self.download_url, stream=True, timeout=30)
             total_size = int(response.headers.get('content-length', 0))
             
-            save_path = os.path.join(os.environ.get("TEMP", "."), "isak35_update.exe")
+            # Gunakan folder AppData untuk penyimpanan sementara yang lebih aman
+            temp_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.environ.get("TEMP")), "ISAK35_Updates")
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
+            
+            save_path = os.path.join(temp_dir, f"isak35_{self.target_version}.exe")
             
             downloaded_size = 0
             with open(save_path, 'wb') as f:
@@ -63,28 +85,35 @@ class DownloadWorker(QThread):
 
 def apply_update(new_exe_path):
     """
-    Creates a batch script to swap the executable and restarts the app.
+    Membuat skrip batch untuk menukar executable dan merestart aplikasi.
     """
-    current_exe = sys.argv[0]
-    if not current_exe.endswith(".exe"):
-        # For development mode, just print info
-        print(f"Bukan mode EXE. Simulasi update dari {new_exe_path} ke {current_exe}")
+    current_exe = get_exe_path()
+    
+    # Jangan lakukan update jika tidak dijalankan sebagai EXE (mode dev)
+    if not current_exe.lower().endswith(".exe"):
+        print(f"[SIMULASI] Mode Development: Mengganti {current_exe} dengan {new_exe_path}")
         return
 
-    # Create updater batch script
+    # Folder EXE asli
+    exe_dir = os.path.dirname(current_exe)
+    batch_path = os.path.join(exe_dir, "finish_update.bat")
+    
+    # Skrip batch yang lebih robust
     batch_content = f"""
 @echo off
-taskkill /f /im {os.path.basename(current_exe)}
-timeout /t 2 /nobreak
-del "{current_exe}"
-move "{new_exe_path}" "{current_exe}"
+title Updating ISAK 35...
+taskkill /f /im "{os.path.basename(current_exe)}" >nul 2>&1
+timeout /t 2 /nobreak >nul
+del /f /q "{current_exe}"
+move /y "{new_exe_path}" "{current_exe}"
 start "" "{current_exe}"
 del "%~f0"
 """
-    batch_path = os.path.join(os.path.dirname(current_exe), "updater.bat")
-    with open(batch_path, "w") as f:
-        f.write(batch_content)
-    
-    # Run the batch script and exit current process
-    subprocess.Popen([batch_path], shell=True)
-    sys.exit(0)
+    try:
+        with open(batch_path, "w") as f:
+            f.write(batch_content)
+        
+        subprocess.Popen([batch_path], shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        sys.exit(0)
+    except Exception as e:
+        print(f"Gagal menerapkan update: {e}")

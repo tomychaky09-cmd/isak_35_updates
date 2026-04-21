@@ -27,11 +27,17 @@ class DatabaseManager:
         self.sqlserver_config = self.config.get("sqlserver_config", {})
 
         if hasattr(sys, '_MEIPASS'):
-            base_dir = os.path.dirname(sys.executable)
+            # Path saat berjalan sebagai executable (OneFile/OneDir)
+            base_dir = sys._MEIPASS
         else:
+            # Path saat dalam mode development
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        self.db_path = os.path.join(base_dir, db_path)
+        # Jika db_path relatif, gabungkan dengan base_dir
+        if not os.path.isabs(db_path):
+            self.db_path = os.path.join(base_dir, db_path)
+        else:
+            self.db_path = db_path
         
         if self.db_type == "sqlite":
             db_dir = os.path.dirname(self.db_path)

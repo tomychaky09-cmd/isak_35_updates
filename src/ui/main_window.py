@@ -315,14 +315,14 @@ class MainWindow(QMainWindow):
         c = data.get("changelog", "Tidak ada catatan perubahan.")
         url = data.get("url")
         if QMessageBox.question(self, "Update Tersedia", f"Versi {v} tersedia!\n\nChangelog:\n{c}\n\nIngin update sekarang?") == QMessageBox.StandardButton.Yes:
-            self.start_download(url)
+            self.start_download(url, v)
 
-    def start_download(self, url):
+    def start_download(self, url, version):
         self.progress = QProgressDialog("Downloading update...", "Batal", 0, 100, self)
         self.progress.setWindowModality(Qt.WindowModality.WindowModal)
         self.progress.show()
-        
-        self.downloader = DownloadWorker(url)
+
+        self.downloader = DownloadWorker(url, version)
         self.downloader.progress.connect(self.progress.setValue)
         self.downloader.finished.connect(self.on_download_finished)
         self.downloader.error.connect(lambda e: (self.progress.close(), QMessageBox.critical(self, "Download Error", f"Gagal download: {e}")))
