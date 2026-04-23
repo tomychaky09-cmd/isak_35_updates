@@ -602,7 +602,7 @@ class DatabaseManager:
         query = '''
             SELECT 
                 j.date as 'Tanggal',
-                j.reference as 'Referensi',
+                j.reference_no as 'Referensi',
                 j.description as 'Keterangan',
                 a.code as 'Kode Akun',
                 a.name as 'Nama Akun',
