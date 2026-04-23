@@ -44,7 +44,7 @@ class ReportGenerator:
             'total_liabilities': total_liabilities,
             'net_assets_without': final_net_without,
             'net_assets_with': final_net_with,
-            'total_net_assets': total_net_assets
+            'total_net_assets': total_net_assets, 'total_liabilities_and_net_assets': total_liabilities + total_net_assets
         }
 
     def get_comprehensive_income(self):
