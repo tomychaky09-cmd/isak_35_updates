@@ -597,3 +597,27 @@ class DatabaseManager:
                 self.add_journal_entry(date, f"Penutup ISM {year}", f"JP-IS-{year}", re_dets)
             return True
         except: return False
+
+    def get_journal_data_for_export(self):
+        query = '''
+            SELECT 
+                j.date as 'Tanggal',
+                j.reference as 'Referensi',
+                j.description as 'Keterangan',
+                a.code as 'Kode Akun',
+                a.name as 'Nama Akun',
+                d.debit as 'Debit',
+                d.credit as 'Kredit',
+                '' as 'Kategori Arus Kas',
+                d.cash_flow_activity as 'Aktivitas Arus Kas',
+                j.notes as 'Catatan'
+            FROM journal_entries j
+            JOIN journal_details d ON j.id = d.journal_id
+            JOIN accounts a ON d.account_id = a.id
+            ORDER BY j.date DESC, j.id DESC, a.code ASC
+        '''
+        conn = sqlite3.connect(self.db_path)
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
+

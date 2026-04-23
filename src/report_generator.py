@@ -312,3 +312,18 @@ class ReportGenerator:
         # report_output.append({"Keterangan": "Kas dan Setara Kas pada Akhir Tahun", "Jumlah (Rp)": "TODO"})
 
         return {"report_data": report_output}
+
+    def export_all_reports_to_excel(self, file_path):
+        try:
+            with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+                # 1. Neraca
+                df_neraca = self.db.get_trial_balance()
+                df_neraca.to_excel(writer, sheet_name="Trial Balance", index=False)
+                
+                # 2. Arus Kas
+                cf_data = self.db.get_all_journal_details_with_cash_flow()
+                df_cf = pd.DataFrame(cf_data, columns=["ID", "Tanggal", "Keterangan", "Akun", "Debit", "Kredit", "Aktivitas"])
+                df_cf.to_excel(writer, sheet_name="Detail Transaksi Kas", index=False)
+            return True
+        except: return False
+
