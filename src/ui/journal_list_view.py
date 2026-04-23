@@ -254,14 +254,15 @@ class JournalListView(QWidget):
                     "Deskripsi", 
                     "Kode Akun", 
                     "Debit", 
-                    "Kredit", 
+                    "Kredit",
+                    "Kategori Arus Kas",
                     "Aktivitas Arus Kas"
                 ]
                 
                 # Buat data contoh
                 example_data = [
-                    ["2026-12-31", "REF-001", "Contoh Transaksi", "1101", 1000000, 0, "Penerimaan dari Sumbangan/Donasi"],
-                    ["2026-12-31", "REF-001", "Contoh Transaksi", "4101", 0, 1000000, ""]
+                    ["2026-12-31", "REF-001", "Contoh Transaksi", "1101", 1000000, 0, "ARUS KAS DARI AKTIVITAS OPERASI", "Penerimaan dari Sumbangan/Donasi"],
+                    ["2026-12-31", "REF-001", "Contoh Transaksi", "4101", 0, 1000000, "", ""]
                 ]
                 
                 df = pd.DataFrame(example_data, columns=columns)

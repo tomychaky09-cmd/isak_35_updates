@@ -129,7 +129,8 @@ class DatabaseManager:
                     code VARCHAR(50) NOT NULL UNIQUE,
                     name VARCHAR(255) NOT NULL,
                     type VARCHAR(50) NOT NULL,
-                    category VARCHAR(100) NOT NULL
+                    category VARCHAR(100) NOT NULL,
+                    notes TEXT
                 )
             """,
             "journal_entries": f"""
@@ -188,6 +189,39 @@ class DatabaseManager:
             except Exception as e:
                 print(f"Error creating table {table_name}: {e}")
 
+        # --- MIGRASI OTOMATIS: Tambah kolom 'notes' jika belum ada ---
+        try:
+            cursor.execute("PRAGMA table_info(accounts)")
+            res = cursor.fetchall()
+            columns = [row[1] for row in res]
+            if "notes" not in columns:
+                print("[MIGRATION] Menambahkan kolom 'notes' ke tabel accounts...")
+                cursor.execute("ALTER TABLE accounts ADD COLUMN notes TEXT")
+                conn.commit()
+        except Exception as e:
+            print(f"Migration Error (accounts.notes): {e}")
+
+        # --- REKOMENDASI POIN 3: Verifikasi Akun Aset Neto Default ---
+        try:
+            # Akun Aset Neto Tanpa Pembatasan
+            self.get_account_by_name_or_create(
+                name="Aset Neto Tanpa Pembatasan", 
+                code="3110", 
+                type="Asset Net", 
+                category="Tanpa Pembatasan"
+            )
+            
+            # Akun Aset Neto Dengan Pembatasan
+            self.get_account_by_name_or_create(
+                name="Aset Neto Dengan Pembatasan", 
+                code="3120", 
+                type="Asset Net", 
+                category="Dengan Pembatasan"
+            )
+            print("[INFO] Verifikasi Akun Aset Neto Default Selesai.")
+        except Exception as e:
+            print(f"[ERROR] Gagal membuat akun default: {e}")
+
         # Check if cash_flow_categories is empty to add defaults
         cursor.execute("SELECT COUNT(*) FROM cash_flow_categories")
         if cursor.fetchone()[0] == 0:
@@ -213,16 +247,16 @@ class DatabaseManager:
         conn.close()
 
     def get_accounts(self):
-        query = "SELECT id, code, name, type, category FROM accounts ORDER BY code"
+        query = "SELECT id, code, name, type, category, notes FROM accounts ORDER BY code"
         return self._execute_query(query, fetch=True)
 
-    def add_account(self, code, name, type, category):
-        query = "INSERT INTO accounts (code, name, type, category) VALUES (?, ?, ?, ?)"
-        self._execute_query(query, (code, name, type, category))
+    def add_account(self, code, name, type, category, notes=""):
+        query = "INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)"
+        self._execute_query(query, (code, name, type, category, notes))
 
-    def update_account(self, account_id, code, name, type, category):
-        query = "UPDATE accounts SET code = ?, name = ?, type = ?, category = ? WHERE id = ?"
-        self._execute_query(query, (code, name, type, category, account_id))
+    def update_account(self, account_id, code, name, type, category, notes=""):
+        query = "UPDATE accounts SET code = ?, name = ?, type = ?, category = ?, notes = ? WHERE id = ?"
+        self._execute_query(query, (code, name, type, category, notes, account_id))
 
     def delete_account(self, account_id):
         query = "DELETE FROM accounts WHERE id = ?"
@@ -234,18 +268,19 @@ class DatabaseManager:
         success_count = 0; fail_count = 0; errors = []
         try:
             for account in accounts_data:
-                code = account.get('code'); name = account.get('name'); acc_type = account.get('type'); category = account.get('category', "")
+                code = account.get('code'); name = account.get('name'); acc_type = account.get('type'); 
+                category = account.get('category', ""); notes = account.get('notes', "")
                 if not all([code, name, acc_type]): continue
                 
                 q_check = "SELECT id FROM accounts WHERE code = %s" if self.db_type == "mysql" else "SELECT id FROM accounts WHERE code = ?"
                 cursor.execute(q_check, (code,))
                 existing = cursor.fetchone()
                 if existing:
-                    q_up = "UPDATE accounts SET name = %s, type = %s, category = %s WHERE id = %s" if self.db_type == "mysql" else "UPDATE accounts SET name = ?, type = ?, category = ? WHERE id = ?"
-                    cursor.execute(q_up, (name, acc_type, category, existing[0]))
+                    q_up = "UPDATE accounts SET name = %s, type = %s, category = %s, notes = %s WHERE id = %s" if self.db_type == "mysql" else "UPDATE accounts SET name = ?, type = ?, category = ?, notes = ? WHERE id = ?"
+                    cursor.execute(q_up, (name, acc_type, category, notes, existing[0]))
                 else:
-                    q_in = "INSERT INTO accounts (code, name, type, category) VALUES (%s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO accounts (code, name, type, category) VALUES (?, ?, ?, ?)"
-                    cursor.execute(q_in, (code, name, acc_type, category))
+                    q_in = "INSERT INTO accounts (code, name, type, category, notes) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)"
+                    cursor.execute(q_in, (code, name, acc_type, category, notes))
                 success_count += 1
             conn.commit()
         except Exception as e:
@@ -269,6 +304,34 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error: {e}"); conn.rollback(); return False
         finally: conn.close()
+
+    def bulk_add_journal_entries(self, entries_data):
+        """
+        Menambahkan banyak jurnal sekaligus.
+        entries_data: list of dict {'date', 'description', 'ref_no', 'details': list of details}
+        """
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        success_count = 0; fail_count = 0; errors = []
+        try:
+            for entry in entries_data:
+                try:
+                    q_in = "INSERT INTO journal_entries (date, description, reference_no) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_entries (date, description, reference_no) VALUES (?, ?, ?)"
+                    cursor.execute(q_in, (entry['date'], entry['description'], entry['ref_no']))
+                    journal_id = cursor.lastrowid
+                    
+                    q_det = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
+                    for item in entry['details']:
+                        cursor.execute(q_det, (journal_id, item['account_id'], item['debit'], item['credit'], item.get('cash_flow_activity')))
+                    success_count += 1
+                except Exception as e:
+                    errors.append(f"Gagal entri {entry.get('ref_no')}: {e}")
+                    fail_count += 1
+            conn.commit()
+        except Exception as e:
+            conn.rollback(); errors.append(str(e))
+        finally: conn.close()
+        return success_count, fail_count, errors
 
     def update_journal_entry(self, journal_id, date, description, ref_no, details):
         conn = self.get_connection()

@@ -14,9 +14,9 @@ class ReportGenerator:
         # Fungsi bantu untuk mencocokkan kategori secara fleksibel
         def filter_category(d, cat_type):
             if cat_type == 'without':
-                return d[d['category'].str.lower().isin(['without restriction', 'tanpa pembatasan'])]
+                return d[d['category'].str.lower() == 'tanpa pembatasan']
             elif cat_type == 'with':
-                return d[d['category'].str.lower().isin(['with restriction', 'dengan pembatasan'])]
+                return d[d['category'].str.lower() == 'dengan pembatasan']
             return pd.DataFrame()
 
         # 1. Aset
@@ -67,9 +67,9 @@ class ReportGenerator:
         # Fungsi bantu untuk mencocokkan kategori secara fleksibel
         def filter_category(d, cat_type):
             if cat_type == 'without':
-                return d[d['category'].str.lower().isin(['without restriction', 'tanpa pembatasan'])]
+                return d[d['category'].str.lower() == 'tanpa pembatasan']
             elif cat_type == 'with':
-                return d[d['category'].str.lower().isin(['with restriction', 'dengan pembatasan'])]
+                return d[d['category'].str.lower() == 'dengan pembatasan']
             return pd.DataFrame()
 
         # Pendapatan
@@ -176,9 +176,9 @@ class ReportGenerator:
         # Fungsi bantu untuk mencocokkan kategori secara fleksibel
         def filter_category(d, cat_type):
             if cat_type == 'without':
-                return d[d['category'].str.lower().isin(['without restriction', 'tanpa pembatasan'])]
+                return d[d['category'].str.lower() == 'tanpa pembatasan']
             elif cat_type == 'with':
-                return d[d['category'].str.lower().isin(['with restriction', 'dengan pembatasan'])]
+                return d[d['category'].str.lower() == 'dengan pembatasan']
             return pd.DataFrame()
 
         # Saldo Aset Neto Awal (dari akun Aset Neto)

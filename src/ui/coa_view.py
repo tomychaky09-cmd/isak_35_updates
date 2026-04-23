@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QTableWidgetItem, QPushButton, QLabel, QHeaderView,
                              QMessageBox, QDialog, QFormLayout, QLineEdit, QComboBox,
-                             QDialogButtonBox, QFileDialog)
+                             QDialogButtonBox, QFileDialog, QTextEdit)
 from PySide6.QtCore import Qt
 from ..database_manager import DatabaseManager
 import pandas as pd
@@ -53,8 +53,8 @@ class CoaView(QWidget):
         layout.addWidget(header_widget)
 
         # Table for accounts
-        self.table_coa = QTableWidget(0, 5)
-        self.table_coa.setHorizontalHeaderLabels(["ID", "Kode", "Nama Akun", "Tipe", "Kategori"])
+        self.table_coa = QTableWidget(0, 6)
+        self.table_coa.setHorizontalHeaderLabels(["ID", "Kode", "Nama Akun", "Tipe", "Kategori", "Catatan (CaLK)"])
         
         # Table Styling for High Contrast
         self.table_coa.setStyleSheet("""
@@ -81,9 +81,10 @@ class CoaView(QWidget):
         
         self.table_coa.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table_coa.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_coa.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.table_coa.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
         self.table_coa.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.table_coa.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_coa.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
         self.table_coa.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table_coa.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table_coa.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -142,7 +143,7 @@ class CoaView(QWidget):
             
             # Create items with explicit black color for safety
             for col_idx, value in enumerate(account):
-                item = QTableWidgetItem(str(value))
+                item = QTableWidgetItem(str(value if value is not None else ""))
                 item.setForeground(Qt.GlobalColor.black)
                 self.table_coa.setItem(row_idx, col_idx, item)
 
@@ -168,9 +169,10 @@ class CoaView(QWidget):
             name = dialog.le_name.text()
             acc_type = dialog.cb_type.currentText()
             category = dialog.cb_category.currentText()
+            notes = dialog.te_notes.toPlainText()
             
             try:
-                self.db.add_account(code, name, acc_type, category)
+                self.db.add_account(code, name, acc_type, category, notes)
                 QMessageBox.information(self, "Sukses", "Akun berhasil ditambahkan.")
                 self.load_accounts()
             except Exception as e:
@@ -188,22 +190,25 @@ class CoaView(QWidget):
         current_name = self.table_coa.item(row, 2).text()
         current_type = self.table_coa.item(row, 3).text()
         current_category = self.table_coa.item(row, 4).text()
+        current_notes = self.table_coa.item(row, 5).text() if self.table_coa.columnCount() > 5 else ""
 
         dialog = AccountFormDialog(self, 
                                    account_id=account_id,
                                    code=current_code,
                                    name=current_name,
                                    acc_type=current_type,
-                                   category=current_category)
+                                   category=current_category,
+                                   notes=current_notes)
         
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_code = dialog.le_code.text()
             new_name = dialog.le_name.text()
             new_type = dialog.cb_type.currentText()
             new_category = dialog.cb_category.currentText()
+            new_notes = dialog.te_notes.toPlainText()
             
             try:
-                self.db.update_account(account_id, new_code, new_name, new_type, new_category)
+                self.db.update_account(account_id, new_code, new_name, new_type, new_category, new_notes)
                 QMessageBox.information(self, "Sukses", "Akun berhasil diperbarui.")
                 self.load_accounts()
             except Exception as e:
@@ -242,7 +247,7 @@ class CoaView(QWidget):
                 if not accounts_data:
                     QMessageBox.information(self, "Info", "Tidak ada data akun untuk diekspor.")
                     return
-                df = pd.DataFrame(accounts_data, columns=["ID", "Kode", "Nama Akun", "Tipe", "Kategori"])
+                df = pd.DataFrame(accounts_data, columns=["ID", "Kode", "Nama Akun", "Tipe", "Kategori", "Catatan (CaLK)"])
                 df.to_excel(file_path, index=False)
                 QMessageBox.information(self, "Sukses", f"Bagan Akun berhasil diekspor ke:\n{file_path}")
             except Exception as e:
@@ -265,7 +270,7 @@ class CoaView(QWidget):
                 
                 accounts_to_import = []
                 # Daftar tipe yang valid sesuai dengan AccountFormDialog
-                valid_types = ["Asset", "Liability", "Equity", "Revenue", "Expense", "Asset Net"]
+                valid_types = ["Asset", "Liability", "Equity", "Revenue", "Expense", "Asset Net", "Asset (Contra)"]
                 
                 for index, row in df.iterrows():
                     # Membersihkan data: hapus spasi di awal/akhir dan pastikan tipe data string
@@ -273,6 +278,7 @@ class CoaView(QWidget):
                     name = str(row["Nama Akun"]).strip()
                     acc_type = str(row["Tipe"]).strip()
                     category = str(row["Kategori"]).strip()
+                    notes = str(row.get("Catatan (CaLK)", "")).strip()
                     
                     # Jika kategori adalah "nan" karena konversi string sebelumnya, kosongkan
                     if category.lower() == "nan":
@@ -289,7 +295,8 @@ class CoaView(QWidget):
                         "code": code,
                         "name": name,
                         "type": matched_type,
-                        "category": category
+                        "category": category,
+                        "notes": notes
                     })
                 
                 success_count, fail_count, errors = self.db.bulk_add_accounts(accounts_to_import)
@@ -317,33 +324,34 @@ class CoaView(QWidget):
                 QMessageBox.critical(self, "Error", f"Gagal unduh: {e}")
 
 class AccountFormDialog(QDialog):
-    def __init__(self, parent=None, account_id=None, code="", name="", acc_type="", category=""):
+    def __init__(self, parent=None, account_id=None, code="", name="", acc_type="", category="", notes=""):
         super().__init__(parent)
         self.account_id = account_id
         self.setWindowTitle("Tambah/Edit Akun")
-        self.setMinimumWidth(300)
-        self.init_ui(code, name, acc_type, category)
+        self.setMinimumWidth(350)
+        self.init_ui(code, name, acc_type, category, notes)
 
-    def init_ui(self, code, name, acc_type, category):
+    def init_ui(self, code, name, acc_type, category, notes):
         layout = QVBoxLayout(self)
         form_layout = QFormLayout()
         self.le_code = QLineEdit(code)
         self.le_name = QLineEdit(name)
         self.cb_type = QComboBox()
-        self.cb_type.addItems(["Asset", "Liability", "Equity", "Revenue", "Expense", "Asset Net"])
+        self.cb_type.addItems(["Asset", "Liability", "Equity", "Revenue", "Expense", "Asset Net", "Asset (Contra)"])
         self.cb_type.setCurrentText(acc_type)
         self.cb_category = QComboBox()
-        self.cb_category.addItem("Without Restriction")
-        self.cb_category.addItem("With Restriction")
-        # Ensure it's set to the standardized English values, or default to one if needed
-        # Assuming it's populated from a list of allowed categories, or setting a default
-        # If it was a free text field, this replaces it with a combobox.
-        # If it was a combobox with other options, this restricts it.
-        self.cb_category.setCurrentText("Without Restriction") # Set default if necessary
+        self.cb_category.addItems(["", "Tanpa Pembatasan", "Dengan Pembatasan"])
+        self.cb_category.setCurrentText(category if category else "")
+        
+        self.te_notes = QTextEdit(notes)
+        self.te_notes.setPlaceholderText("Tambahkan narasi atau catatan untuk akun ini (CaLK)")
+        self.te_notes.setMaximumHeight(80)
+
         form_layout.addRow("Kode Akun:", self.le_code)
         form_layout.addRow("Nama Akun:", self.le_name)
         form_layout.addRow("Tipe Akun:", self.cb_type)
         form_layout.addRow("Kategori:", self.cb_category)
+        form_layout.addRow("Catatan (CaLK):", self.te_notes)
         layout.addLayout(form_layout)
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         button_box.accepted.connect(self.accept)

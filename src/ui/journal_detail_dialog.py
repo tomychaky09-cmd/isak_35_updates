@@ -9,7 +9,7 @@ from ..database_manager import DatabaseManager
 
 class JournalDetailDialog(QDialog):
     """
-    Dialog untuk menampilkan detail lengkap dari satu entri jurnal.
+    Dialog untuk menampilkan detail lengkap dari satu entri jurnal dengan info Arus Kas lengkap.
     """
     def __init__(self, journal_id, parent=None):
         super().__init__(parent)
@@ -17,7 +17,7 @@ class JournalDetailDialog(QDialog):
         self.db = DatabaseManager()
 
         self.setWindowTitle(f"Detail Jurnal #{self.journal_id}")
-        self.setMinimumSize(600, 500)
+        self.setMinimumSize(800, 500) # Perlebar dialog untuk mengakomodasi kolom baru
 
         self.init_ui()
         self.load_details()
@@ -40,15 +40,22 @@ class JournalDetailDialog(QDialog):
         
         layout.addWidget(header_frame)
 
-        # Table Section
-        self.table_details = QTableWidget(0, 5) # Code, Name, Debit, Credit, Cash Flow Activity
-        self.table_details.setHorizontalHeaderLabels(["Kode Akun", "Nama Akun", "Debet (Rp)", "Kredit (Rp)", "Aktivitas Arus Kas"])
-        self.table_details.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.table_details.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_details.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_details.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_details.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_details.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers) # Make table read-only
+        # Table Section (6 Columns now)
+        self.table_details = QTableWidget(0, 6) 
+        self.table_details.setHorizontalHeaderLabels([
+            "Kode Akun", "Nama Akun", "Debet (Rp)", "Kredit (Rp)", 
+            "Kategori Arus Kas", "Aktivitas Arus Kas"
+        ])
+        
+        h = self.table_details.horizontalHeader()
+        h.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        h.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
+        
+        self.table_details.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self.table_details)
 
         # Footer Total
@@ -72,6 +79,10 @@ class JournalDetailDialog(QDialog):
             self.lbl_desc.setText("<font color='red'>Error: Jurnal tidak ditemukan.</font>")
             return
 
+        # Ambil pemetaan arus kas untuk lookup Kategori Utama
+        all_cats = self.db.get_cash_flow_categories()
+        act_to_main = {c[1]: c[2] for c in all_cats}
+
         # Isi Header
         header_data = data['header']
         self.lbl_date.setText(header_data[0])
@@ -86,7 +97,7 @@ class JournalDetailDialog(QDialog):
         total_credit = 0
 
         for row, item in enumerate(details_data):
-            code, name, debit, credit, cash_flow_activity = item # Unpack cash_flow_activity
+            code, name, debit, credit, activity_name = item
             
             self.table_details.setItem(row, 0, QTableWidgetItem(code))
             self.table_details.setItem(row, 1, QTableWidgetItem(name))
@@ -99,8 +110,10 @@ class JournalDetailDialog(QDialog):
             credit_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.table_details.setItem(row, 3, credit_item)
 
-            cf_activity_item = QTableWidgetItem(cash_flow_activity if cash_flow_activity else "Tidak Berlaku")
-            self.table_details.setItem(row, 4, cf_activity_item)
+            # Determine Main Category and Activity
+            main_cat = act_to_main.get(activity_name, "Tidak Berlaku") if activity_name else "Tidak Berlaku"
+            self.table_details.setItem(row, 4, QTableWidgetItem(main_cat))
+            self.table_details.setItem(row, 5, QTableWidgetItem(activity_name if activity_name else "-"))
             
             total_debit += debit
             total_credit += credit

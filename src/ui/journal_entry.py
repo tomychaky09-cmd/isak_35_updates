@@ -13,12 +13,23 @@ class JournalEntryView(QWidget):
         self.db = DatabaseManager('database/foundation_finance.db')
         self.editing_journal_id = None
         self.account_list = {}
+        self.cf_mapping = {} # {Kategori_Utama: [List_Aktivitas]}
         self._populate_account_list()
+        self._populate_cf_mapping()
         self.init_ui()
 
     def _populate_account_list(self):
         accounts = self.db.get_accounts()
         self.account_list = {f"{acc[1]} - {acc[2]}": acc[0] for acc in accounts}
+
+    def _populate_cf_mapping(self):
+        categories = self.db.get_cash_flow_categories()
+        # categories format: (id, name, main_category)
+        self.cf_mapping = {}
+        for _, name, main_cat in categories:
+            if main_cat not in self.cf_mapping:
+                self.cf_mapping[main_cat] = []
+            self.cf_mapping[main_cat].append(name)
 
     def init_ui(self):
         self.setStyleSheet("background-color: #d1d8e0;")
@@ -29,11 +40,6 @@ class JournalEntryView(QWidget):
         # Top bar with Back Button
         top_bar = QHBoxLayout()
         self.btn_back = QPushButton("⬅️ Kembali ke Daftar")
-        self.btn_back.setStyleSheet("""
-            QPushButton { background-color: #7f8c8d; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; }
-            QPushButton:hover { background-color: #636e72; }
-        """)
-        self.btn_back.clicked.connect(self.back_requested.emit)
         top_bar.addWidget(self.btn_back)
         top_bar.addStretch()
         layout.addLayout(top_bar)
@@ -42,75 +48,47 @@ class JournalEntryView(QWidget):
         header_box = QFrame()
         header_box.setStyleSheet("background-color: #ffffff; border-radius: 8px; border: 1px solid #a5b1c2;")
         header_layout = QHBoxLayout(header_box)
-        header_layout.setContentsMargins(15, 15, 15, 15)
         
         self.date_input = QDateEdit(QDate.currentDate())
         self.date_input.setCalendarPopup(True)
-        self.date_input.setStyleSheet("background-color: white; color: black; padding: 5px; border: 1px solid #ced4da;")
-        
         self.desc_input = QLineEdit()
-        self.desc_input.setPlaceholderText("Deskripsi Transaksi...")
-        self.desc_input.setStyleSheet("background-color: white; color: black; padding: 5px; border: 1px solid #ced4da;")
-        
         self.ref_input = QLineEdit()
-        self.ref_input.setPlaceholderText("No. Referensi...")
-        self.ref_input.setStyleSheet("background-color: white; color: black; padding: 5px; border: 1px solid #ced4da;")
         
         header_layout.addWidget(QLabel("Tanggal:"))
         header_layout.addWidget(self.date_input)
         header_layout.addWidget(QLabel("Deskripsi:"))
-        header_layout.addWidget(self.desc_input, 2) # Give description more space
+        header_layout.addWidget(self.desc_input, 2)
         header_layout.addWidget(QLabel("Ref:"))
         header_layout.addWidget(self.ref_input)
-        
         layout.addWidget(header_box)
 
-        # Table Styling with Adjusted Widths
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["Nama Akun", "Debet", "Kredit", "Aktivitas Arus Kas"])
+        # Table for journal details (5 columns now)
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(["Nama Akun", "Debet", "Kredit", "Kategori Arus Kas", "Aktivitas Arus Kas"])
         self.table.setStyleSheet("""
-            QTableWidget {
-                background-color: #ffffff;
-                color: #000000;
-                gridline-color: #d1d8e0;
-                border: 1px solid #a5b1c2;
-                border-radius: 4px;
-            }
-            QHeaderView::section {
-                background-color: #4b6584;
-                color: white;
-                padding: 8px;
-                font-weight: bold;
-                border: none;
-            }
+            QTableWidget { background-color: #ffffff; color: #000000; border: 1px solid #a5b1c2; }
+            QHeaderView::section { background-color: #4b6584; color: white; padding: 8px; font-weight: bold; }
         """)
         
-        # Penyesuaian Lebar Kolom:
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
-        self.table.setColumnWidth(0, 250) # Kecilkan kolom Akun (250px)
-        
+        self.table.setColumnWidth(0, 250)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Interactive)
-        self.table.setColumnWidth(1, 120) # Lebar Debet tetap
-        
+        self.table.setColumnWidth(1, 100)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Interactive)
-        self.table.setColumnWidth(2, 120) # Lebar Kredit tetap
-        
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch) # Lebarkan Arus Kas (Stretch)
+        self.table.setColumnWidth(2, 100)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Interactive)
+        self.table.setColumnWidth(3, 180)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         
         layout.addWidget(self.table)
 
         # Footer
         footer_layout = QHBoxLayout()
         self.btn_add_row = QPushButton("+ Tambah Baris")
-        self.btn_add_row.setStyleSheet("background-color: #2c3e50; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold;")
-        self.btn_add_row.clicked.connect(self.add_new_row)
-        
         self.label_total_debit = QLabel("Total Debet: 0")
         self.label_total_credit = QLabel("Total Kredit: 0")
-        
         self.btn_save = QPushButton("💾 Simpan Jurnal")
-        self.btn_save.clicked.connect(self.save_journal)
         
         footer_layout.addWidget(self.btn_add_row)
         footer_layout.addStretch()
@@ -119,13 +97,17 @@ class JournalEntryView(QWidget):
         footer_layout.addWidget(self.btn_save)
         layout.addLayout(footer_layout)
 
+        # Connect signals
+        self.btn_back.clicked.connect(self.back_requested.emit)
+        self.btn_add_row.clicked.connect(self.add_new_row)
+        self.btn_save.clicked.connect(self.save_journal)
         self.table.itemChanged.connect(self.update_totals)
+        
         self.reset_form()
 
     def _setup_account_combo_widget(self, row):
         combo = QComboBox()
         combo.setEditable(True)
-        combo.setStyleSheet("background-color: white; color: black; border: none;")
         items = list(self.account_list.keys())
         combo.addItems(items)
         completer = QCompleter(items)
@@ -134,14 +116,31 @@ class JournalEntryView(QWidget):
         self.table.setCellWidget(row, 0, combo)
         return combo
 
-    def _setup_cash_flow_combo_widget(self, row):
-        cash_flow_categories = self.db.get_cash_flow_categories()
-        activities = ["", "Tidak Berlaku"] + [c[1] for c in cash_flow_categories]
-        combo = QComboBox()
-        combo.addItems(activities)
-        combo.setStyleSheet("background-color: white; color: black; border: none;")
-        self.table.setCellWidget(row, 3, combo)
-        return combo
+    def _setup_cf_widgets(self, row):
+        # 1. Main Category Combo
+        main_combo = QComboBox()
+        main_categories = ["", "Tidak Berlaku"] + list(self.cf_mapping.keys())
+        main_combo.addItems(main_categories)
+        self.table.setCellWidget(row, 3, main_combo)
+        
+        # 2. Activity Combo (linked to main)
+        activity_combo = QComboBox()
+        activity_combo.addItems([""])
+        self.table.setCellWidget(row, 4, activity_combo)
+        
+        # Connect change signal
+        main_combo.currentTextChanged.connect(lambda text: self._update_activity_options(row, text))
+        return main_combo, activity_combo
+
+    def _update_activity_options(self, row, main_cat):
+        activity_combo = self.table.cellWidget(row, 4)
+        if not activity_combo: return
+        
+        activity_combo.clear()
+        if main_cat in self.cf_mapping:
+            activity_combo.addItems([""] + self.cf_mapping[main_cat])
+        else:
+            activity_combo.addItems([""])
 
     def setup_row_widgets(self, row):
         self._setup_account_combo_widget(row)
@@ -150,7 +149,7 @@ class JournalEntryView(QWidget):
             it.setForeground(Qt.GlobalColor.black)
             it.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.table.setItem(row, col, it)
-        self._setup_cash_flow_combo_widget(row)
+        self._setup_cf_widgets(row)
 
     def add_new_row(self):
         r = self.table.rowCount()
@@ -187,22 +186,29 @@ class JournalEntryView(QWidget):
         if not d: return
         h = d['header']; det = d['details']
         
-        # Bersihkan tanggal dari jam (00:00:00) jika ada
         raw_date = str(h[0])
         clean_date = raw_date.split(' ')[0] if ' ' in raw_date else raw_date
-        if len(clean_date) > 10: clean_date = clean_date[:10]
-        
-        self.date_input.setDate(QDate.fromString(clean_date, "yyyy-MM-dd"))
+        self.date_input.setDate(QDate.fromString(clean_date[:10], "yyyy-MM-dd"))
         self.desc_input.setText(h[1]); self.ref_input.setText(h[2])
         self.table.setRowCount(len(det))
+        
+        # Get category mapping for reverse lookup
+        all_cats = self.db.get_cash_flow_categories()
+        cat_to_main = {c[1]: c[2] for c in all_cats}
+        
         for r, itm in enumerate(det):
-            code, name, deb, cre, cf = itm
+            code, name, deb, cre, activity_name = itm
             self.table.setItem(r, 1, QTableWidgetItem(str(deb)))
             self.table.setItem(r, 2, QTableWidgetItem(str(cre)))
-            self.table.item(r, 1).setForeground(Qt.GlobalColor.black)
-            self.table.item(r, 2).setForeground(Qt.GlobalColor.black)
             self._setup_account_combo_widget(r).setCurrentText(f"{code} - {name}")
-            self._setup_cash_flow_combo_widget(r).setCurrentText(cf if cf else "Tidak Berlaku")
+            
+            main_combo, act_combo = self._setup_cf_widgets(r)
+            if activity_name and activity_name in cat_to_main:
+                main_combo.setCurrentText(cat_to_main[activity_name])
+                act_combo.setCurrentText(activity_name)
+            elif activity_name == "Tidak Berlaku":
+                main_combo.setCurrentText("Tidak Berlaku")
+                
         self.update_totals()
         self.btn_save.setText(f"🆙 Update Jurnal #{j_id}")
         self.btn_save.setStyleSheet("background-color: #f39c12; color: white; font-weight: bold; padding: 10px 20px; border-radius: 6px;")
@@ -221,22 +227,22 @@ class JournalEntryView(QWidget):
             ac_txt = combo.currentText()
             if ac_txt not in self.account_list: continue
             
-            cf_combo = self.table.cellWidget(r, 3)
-            cf = cf_combo.currentText() if cf_combo else ""
-            if cf in ["Tidak Berlaku", ""]: cf = None
+            # Ambil aktivitas yang dipilih (kolom ke-5)
+            act_combo = self.table.cellWidget(r, 4)
+            activity = act_combo.currentText() if act_combo else None
+            if activity == "": activity = None
             
             try:
                 d = float(self.table.item(r, 1).text().replace(',', ''))
                 c = float(self.table.item(r, 2).text().replace(',', ''))
                 if d > 0 or c > 0:
-                    details.append({'account_id': self.account_list[ac_txt], 'debit': d, 'credit': c, 'cash_flow_activity': cf})
+                    details.append({'account_id': self.account_list[ac_txt], 'debit': d, 'credit': c, 'cash_flow_activity': activity})
                     td += d; tc += c
             except: continue
             
         if not details:
             QMessageBox.warning(self, "Peringatan", "Data jurnal tidak lengkap")
             return
-            
         if abs(td-tc) > 0.01:
             QMessageBox.critical(self, "Gagal", "Jurnal tidak seimbang!")
             return

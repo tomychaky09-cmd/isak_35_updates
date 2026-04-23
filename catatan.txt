@@ -1,0 +1,27 @@
+=== CATATAN PERKEMBANGAN PROYEK ISAK 35 ===
+Tanggal: 21 April 2026
+
+STATUS TERAKHIR:
+1. GitHub Sync: Repositori 'isak_35_updates' sudah sinkron di branch 'master'.
+2. Aplikasi Stabil: Build terakhir menggunakan mode 'OneDir' (ISAK35_App) untuk menghindari error DLL/HOME_DIR.
+3. Versi: Lokal 1.0.0, GitHub 1.0.1 (untuk keperluan testing updater).
+
+FITUR YANG SUDAH DIIMPLEMENTASIKAN:
+- Standarisasi Bahasa: Kategori akun dikunci menggunakan bahasa Indonesia ("Tanpa Pembatasan", "Dengan Pembatasan") pada UI dan Laporan.
+- Fitur CaLK Dasar: Penambahan kolom 'Catatan' pada Bagan Akun (COA). Sudah didukung di database, form input, serta ekspor/impor Excel.
+- Akun Otomatis: Sistem sekarang otomatis membuat akun Aset Neto default (3110 & 3120) saat startup jika belum ada.
+- Jurnal Arus Kas Powerful:
+  * Input Jurnal sekarang memiliki kolom 'Kategori Utama' (Operasional, Investasi, Pendanaan).
+  * Menggunakan sistem 'Chained Dropdown' (Pilihan Aktivitas menyesuaikan Kategori Utama).
+  * Detail Jurnal dan Template Excel sudah diperbarui dengan informasi lengkap ini.
+- Migrasi Otomatis: Database sekarang otomatis menambah kolom baru (seperti 'notes') tanpa merusak data lama.
+- Perbaikan Bug: Menambahkan fungsi 'bulk_add_journal_entries' untuk impor jurnal massal.
+
+TUGAS SELANJUTNYA (TODO):
+- Lakukan Kompilasi Ulang (Build EXE) untuk membungkus fitur Jurnal Arus Kas terbaru.
+- Uji coba fitur 'Chained Dropdown' pada form Jurnal di dalam aplikasi .exe.
+- Pengembangan fitur Ekspor CaLK (Catatan atas Laporan Keuangan) menjadi dokumen terpisah.
+
+BACKUP:
+- Folder 'backup_sebelum_rekomendasi' berisi file asli sebelum perubahan besar hari ini.
+==========================================
