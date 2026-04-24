@@ -98,15 +98,11 @@ class JournalListView(QWidget):
 
         self.btn_import_excel = QPushButton("📥 Impor")
         self.btn_export_excel = QPushButton("📤 Ekspor")
-        self.btn_export_excel = QPushButton("📤 Ekspor")
         self.btn_import_excel.setStyleSheet("background-color: #2ecc71; color: white; font-weight: bold; padding: 10px; border-radius: 6px;")
-        self.btn_export_excel.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 10px; border-radius: 6px;")
         self.btn_export_excel.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 10px; border-radius: 6px;")
         self.btn_import_excel.clicked.connect(self.import_from_excel)
         self.btn_export_excel.clicked.connect(self.export_to_excel)
-        self.btn_export_excel.clicked.connect(self.export_to_excel)
         top_bar_layout.addWidget(self.btn_import_excel)
-        top_bar_layout.addWidget(self.btn_export_excel)
         top_bar_layout.addWidget(self.btn_export_excel)
         
         layout.addWidget(top_bar_widget)
@@ -302,19 +298,4 @@ class JournalListView(QWidget):
                 QMessageBox.information(self, "Berhasil", f"Data jurnal berhasil diekspor ke:\n{file_path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Gagal mengekspor data: {str(e)}")
-
-
-    def export_to_excel(self):
-        try:
-            df = self.db.get_journal_data_for_export()
-            if df.empty:
-                QMessageBox.warning(self, "Peringatan", "Tidak ada data jurnal untuk diekspor.")
-                return
-            file_path, _ = QFileDialog.getSaveFileName(self, "Simpan Jurnal", "", "Excel Files (*.xlsx)")
-            if file_path:
-                if not file_path.endswith(".xlsx"): file_path += ".xlsx"
-                df.to_excel(file_path, index=False)
-                QMessageBox.information(self, "Berhasil", f"Data jurnal berhasil diekspor ke:\n{file_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Gagal mengekspor: {str(e)}")
 

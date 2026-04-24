@@ -44,7 +44,8 @@ class ReportGenerator:
             'total_liabilities': total_liabilities,
             'net_assets_without': final_net_without,
             'net_assets_with': final_net_with,
-            'total_net_assets': total_net_assets, 'total_liabilities_and_net_assets': total_liabilities + total_net_assets
+            'total_net_assets': total_net_assets,
+            'total_liabilities_and_net_assets': total_liabilities + total_net_assets
         }
 
     def get_comprehensive_income(self):
@@ -68,53 +69,143 @@ class ReportGenerator:
             'total_expenses': expenses['balance'].sum()
         }
 
+    def get_trial_balance_report(self):
+        df = self.db.get_trial_balance()
+        df['debit'] = df['debit'].fillna(0)
+        df['credit'] = df['credit'].fillna(0)
+        return df.to_dict('records')
+
+    def get_statement_of_activities(self):
+        data = self.get_comprehensive_income()
+        rev_without_df = pd.DataFrame(data['revenue_without'])
+        rev_with_df = pd.DataFrame(data['revenue_with'])
+        
+        rev_combined = []
+        all_rev_names = set(rev_without_df['name'].tolist() if not rev_without_df.empty else []) | \
+                          set(rev_with_df['name'].tolist() if not rev_with_df.empty else [])
+        
+        for name in all_rev_names:
+            wout = rev_without_df[rev_without_df['name'] == name]['balance'].sum() if not rev_without_df.empty else 0
+            with_r = rev_with_df[rev_with_df['name'] == name]['balance'].sum() if not rev_with_df.empty else 0
+            rev_combined.append({'name': name, 'without_restriction': wout, 'with_restriction': with_r, 'total': wout + with_r})
+
+        exp_df = pd.DataFrame(data['expenses'])
+        total_rev_without = rev_without_df['balance'].sum() if not rev_without_df.empty else 0
+        total_rev_with = rev_with_df['balance'].sum() if not rev_with_df.empty else 0
+        total_exp = exp_df['balance'].sum() if not exp_df.empty else 0
+
+        return {
+            'revenue': pd.DataFrame(rev_combined),
+            'expense': exp_df,
+            'total_rev_without': total_rev_without,
+            'total_rev_with': total_rev_with,
+            'total_rev': total_rev_without + total_rev_with,
+            'total_exp': total_exp,
+            'change_without': total_rev_without - total_exp,
+            'change_with': total_rev_with,
+            'total_change': (total_rev_without + total_rev_with) - total_exp
+        }
+
     def get_changes_in_net_assets_report(self):
         pos = self.get_isak35_financial_position()
-        inc = self.get_comprehensive_income()
-        surplus_without = inc['total_revenue'] - inc['total_expenses'] # Simplified
-        surplus_with = sum([r['balance'] for r in inc['revenue_with']])
-
+        akt = self.get_statement_of_activities()
+        
+        # SINKRONISASI KUNCI DENGAN UI (report_view.py)
         return [
-            {"Keterangan": "Aset Neto Awal Periode", "Tanpa Pembatasan": pos['net_assets_without'] - surplus_without, "Dengan Pembatasan": pos['net_assets_with'] - surplus_with},
-            {"Keterangan": "Perubahan Periode Berjalan", "Tanpa Pembatasan": surplus_without, "Dengan Pembatasan": surplus_with},
-            {"Keterangan": "Aset Neto Akhir Periode", "Tanpa Pembatasan": pos['net_assets_without'], "Dengan Pembatasan": pos['net_assets_with']}
+            {
+                "description": "Aset Neto Awal Periode", 
+                "without_restriction": pos['net_assets_without'] - akt['change_without'], 
+                "with_restriction": pos['net_assets_with'] - akt['change_with'],
+                "total": pos['total_net_assets'] - akt['total_change']
+            },
+            {
+                "description": "Perubahan Periode Berjalan", 
+                "without_restriction": akt['change_without'], 
+                "with_restriction": akt['change_with'],
+                "total": akt['total_change']
+            },
+            {
+                "description": "Aset Neto Akhir Periode", 
+                "without_restriction": pos['net_assets_without'], 
+                "with_restriction": pos['net_assets_with'],
+                "total": pos['total_net_assets']
+            }
         ]
 
-    def get_cash_flow_report(self):
-        query = "SELECT jd.cash_flow_activity, jd.debit, jd.credit, cfc.main_category FROM journal_details jd JOIN cash_flow_categories cfc ON jd.cash_flow_activity = cfc.name"
+    def get_cash_flow_statement(self):
+        query = "SELECT jd.cash_flow_activity as activity, jd.debit, jd.credit, cfc.main_category FROM journal_details jd JOIN cash_flow_categories cfc ON jd.cash_flow_activity = cfc.name"
         conn = self.db.get_connection()
         df = pd.read_sql_query(query, conn)
         conn.close()
+        
+        if not df.empty:
+            df['amount'] = df['debit'] - df['credit']
+            summary = df.groupby(['main_category', 'activity'])['amount'].sum().reset_index()
+        else:
+            summary = pd.DataFrame(columns=['main_category', 'activity', 'amount'])
+        return summary
+
+    def get_cash_flow_report(self):
+        df = self.get_cash_flow_statement()
         report_data = []
+        total_all_activities = 0
         for cat in ["ARUS KAS DARI AKTIVITAS OPERASI", "ARUS KAS DARI AKTIVITAS INVESTASI", "ARUS KAS DARI AKTIVITAS PENDANAAN"]:
             cat_df = df[df['main_category'] == cat]
-            report_data.append({"Keterangan": cat, "Nilai": ""})
-            for act in cat_df['cash_flow_activity'].unique():
-                val = cat_df[cat_df['cash_flow_activity'] == act]['debit'].sum() - cat_df[cat_df['cash_flow_activity'] == act]['credit'].sum()
-                report_data.append({"Keterangan": f"  {act}", "Nilai": val})
-            report_data.append({"Keterangan": f"Total {cat}", "Nilai": cat_df['debit'].sum() - cat_df['credit'].sum()})
+            cat_total = cat_df['amount'].sum() if not cat_df.empty else 0
+            total_all_activities += cat_total
+            
+            report_data.append({"Keterangan": cat, "Jumlah (Rp)": ""})
+            for _, r in cat_df.iterrows():
+                report_data.append({"Keterangan": f"  {r['activity']}", "Jumlah (Rp)": r['amount']})
+            report_data.append({"Keterangan": f"Total {cat}", "Jumlah (Rp)": cat_total})
+            report_data.append({"Keterangan": "", "Jumlah (Rp)": ""})
+            
+        report_data.append({"Keterangan": "KENAIKAN (PENURUNAN) BERSIH KAS", "Jumlah (Rp)": total_all_activities})
         return {"report_data": report_data}
 
     def export_all_reports_to_excel(self, file_path):
         try:
             with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-                # 1
+                # 1. Posisi Keuangan
                 pos = self.get_isak35_financial_position()
                 rows_pos = [["LAPORAN POSISI KEUANGAN"], [""]]
+                rows_pos.append(["ASET", ""])
                 for a in pos["assets"]: rows_pos.append([a['name'], a["balance"]])
                 rows_pos.append(["TOTAL ASET", pos["total_assets"]])
-                pd.DataFrame(rows_pos).to_excel(writer, sheet_name="Posisi Keuangan", index=False)
-                # 2
-                inc = self.get_comprehensive_income()
-                rows_inc = [["LAPORAN AKTIVITAS"], [""]]
-                rows_inc.append(["TOTAL PENDAPATAN", inc["total_revenue"]])
-                rows_inc.append(["TOTAL BEBAN", inc["total_expenses"]])
-                pd.DataFrame(rows_inc).to_excel(writer, sheet_name="Laporan Aktivitas", index=False)
-                # 3
+                rows_pos.append(["", ""])
+                rows_pos.append(["LIABILITAS", ""])
+                for l in pos["liabilities"]: rows_pos.append([l['name'], l["balance"]])
+                rows_pos.append(["TOTAL LIABILITAS", pos["total_liabilities"]])
+                rows_pos.append(["", ""])
+                rows_pos.append(["ASET NETO", ""])
+                rows_pos.append(["  Tanpa Pembatasan", pos["net_assets_without"]])
+                rows_pos.append(["  Dengan Pembatasan", pos["net_assets_with"]])
+                rows_pos.append(["TOTAL ASET NETO", pos["total_net_assets"]])
+                pd.DataFrame(rows_pos, columns=["Keterangan", "Nilai"]).to_excel(writer, sheet_name="Posisi Keuangan", index=False)
+
+                # 2. Aktivitas
+                akt = self.get_statement_of_activities()
+                rows_akt = [["LAPORAN AKTIVITAS"], [""]]
+                rows_akt.append(["PENDAPATAN", ""])
+                for _, r in akt["revenue"].iterrows(): rows_akt.append([r['name'], r["total"]])
+                rows_akt.append(["TOTAL PENDAPATAN", akt["total_rev"]])
+                rows_akt.append(["", ""])
+                rows_akt.append(["BEBAN", ""])
+                for _, r in akt["expense"].iterrows(): rows_akt.append([r['name'], r["balance"]])
+                rows_akt.append(["TOTAL BEBAN", akt["total_exp"]])
+                rows_akt.append(["", ""])
+                rows_akt.append(["PERUBAHAN ASET NETO", akt["total_change"]])
+                pd.DataFrame(rows_akt, columns=["Keterangan", "Nilai"]).to_excel(writer, sheet_name="Laporan Aktivitas", index=False)
+
+                # 3. Perubahan Aset Neto
                 p_data = self.get_changes_in_net_assets_report()
                 pd.DataFrame(p_data).to_excel(writer, sheet_name="Perubahan Aset Neto", index=False)
-                # 4
+
+                # 4. Arus Kas
                 cf_data = self.get_cash_flow_report()
-                pd.DataFrame(cf_data["report_data"]).to_excel(writer, sheet_name="Arus Kas", index=False)
+                df_cf = pd.DataFrame(cf_data["report_data"])
+                df_cf.to_excel(writer, sheet_name="Arus Kas", index=False)
             return True
-        except: return False
+        except Exception as e:
+            print(f"Export Error: {e}")
+            return False

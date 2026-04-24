@@ -104,6 +104,36 @@ class SettingsView(QWidget):
         container_layout.addWidget(self.mssql_group)
         self.mssql_group.setVisible(False)
 
+        container_layout.addSpacing(20)
+
+        # --- Backup & Restore Section ---
+        backup_title = QLabel("💾 MANAJEMEN CADANGAN DATA (BACKUP)")
+        backup_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50; margin-top: 10px;")
+        container_layout.addWidget(backup_title)
+        
+        backup_btn_layout = QHBoxLayout()
+        self.btn_backup = QPushButton("📤 Buat Backup Sistem")
+        self.btn_restore = QPushButton("📥 Pulihkan dari Backup")
+        
+        btn_backup_style = """
+            QPushButton { background-color: #34495e; color: white; padding: 10px; border-radius: 5px; font-weight: bold; }
+            QPushButton:hover { background-color: #2c3e50; }
+        """
+        btn_restore_style = """
+            QPushButton { background-color: #e67e22; color: white; padding: 10px; border-radius: 5px; font-weight: bold; }
+            QPushButton:hover { background-color: #d35400; }
+        """
+        
+        self.btn_backup.setStyleSheet(btn_backup_style)
+        self.btn_restore.setStyleSheet(btn_restore_style)
+        
+        self.btn_backup.clicked.connect(self.handle_backup)
+        self.btn_restore.clicked.connect(self.handle_restore)
+        
+        backup_btn_layout.addWidget(self.btn_backup)
+        backup_btn_layout.addWidget(self.btn_restore)
+        container_layout.addLayout(backup_btn_layout)
+
         container_layout.addSpacing(30)
 
         # Save Button
@@ -118,6 +148,50 @@ class SettingsView(QWidget):
 
         layout.addWidget(main_container)
         layout.addStretch()
+
+    def handle_backup(self):
+        from PySide6.QtWidgets import QFileDialog
+        from src.database_manager import DatabaseManager
+        import json
+        
+        path, _ = QFileDialog.getSaveFileName(self, "Simpan Backup Sistem", "Backup_Yayasan_Full.json", "Backup Files (*.json)")
+        if path:
+            db = DatabaseManager()
+            data = db.generate_full_backup()
+            if data:
+                try:
+                    with open(path, 'w') as f:
+                        json.dump(data, f, indent=4)
+                    QMessageBox.information(self, "Sukses", f"Backup sistem berhasil disimpan ke:\n{path}")
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Gagal menulis file backup: {e}")
+            else:
+                QMessageBox.critical(self, "Error", "Gagal mengambil data dari database.")
+
+    def handle_restore(self):
+        from PySide6.QtWidgets import QFileDialog
+        from src.database_manager import DatabaseManager
+        import json
+        
+        reply = QMessageBox.warning(self, "Peringatan Serius", 
+                                    "Proses pemulihan akan MENGHAPUS SELURUH DATA yang ada saat ini dan menggantinya dengan data dari file backup.\n\nApakah Anda yakin ingin melanjutkan?",
+                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            path, _ = QFileDialog.getOpenFileName(self, "Pilih File Backup", "", "Backup Files (*.json)")
+            if path:
+                try:
+                    with open(path, 'r') as f:
+                        data = json.load(f)
+                    
+                    db = DatabaseManager()
+                    success, msg = db.restore_full_backup(data)
+                    if success:
+                        QMessageBox.information(self, "Sukses", "Data berhasil dipulihkan. Aplikasi akan memerlukan restart untuk menyegarkan tampilan.")
+                    else:
+                        QMessageBox.critical(self, "Gagal", f"Gagal memulihkan data: {msg}")
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Gagal membaca file backup: {e}")
 
     def toggle_db_inputs(self, text):
         self.mysql_group.setVisible(text == "MySQL (Server)")

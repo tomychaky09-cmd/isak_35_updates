@@ -285,17 +285,21 @@ class ReportView(QWidget):
         for row_data in result['report_data']:
             row_idx = self.table_arus_kas.rowCount()
             self.table_arus_kas.insertRow(row_idx)
-            desc_item = QTableWidgetItem(str(row_data['Keterangan']))
+            desc = str(row_data['Keterangan'])
+            desc_item = QTableWidgetItem(desc)
             desc_item.setForeground(Qt.GlobalColor.black)
             val = row_data['Jumlah (Rp)']
             amount_item = QTableWidgetItem(f"{val:,.0f}" if isinstance(val, (int, float)) else "")
             amount_item.setForeground(Qt.GlobalColor.black)
             amount_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            if "Total" in str(row_data['Keterangan']) or "Bersih" in str(row_data['Keterangan']):
+            
+            # Bold for Totals and the final Net Change
+            if "Total" in desc or "Bersih" in desc or "BERSIH" in desc:
                 font = desc_item.font()
                 font.setBold(True)
                 desc_item.setFont(font)
                 amount_item.setFont(font)
+                
             self.table_arus_kas.setItem(row_idx, 0, desc_item)
             self.table_arus_kas.setItem(row_idx, 1, amount_item)
 
@@ -327,7 +331,17 @@ class ReportView(QWidget):
                 self.table_ledger.setItem(row_idx, col_idx, item)
 
     def handle_export(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Simpan Laporan", "Laporan_Yayasan.xlsx", "Excel Files (*.xlsx)")
-        if path:
-            if self.report_gen.export_to_excel(path):
-                QMessageBox.information(self, "Berhasil", f"Laporan disimpan di:\n{path}")
+        # Tambahkan guard agar tidak jalan dua kali
+        if hasattr(self, '_exporting') and self._exporting:
+            return
+        
+        self._exporting = True
+        try:
+            path, _ = QFileDialog.getSaveFileName(self, "Simpan Laporan", "Laporan_Yayasan.xlsx", "Excel Files (*.xlsx)")
+            if path:
+                if self.report_gen.export_all_reports_to_excel(path):
+                    QMessageBox.information(self, "Berhasil", f"Laporan disimpan di:\n{path}")
+                else:
+                    QMessageBox.critical(self, "Gagal", "Terjadi kesalahan saat mengekspor laporan.")
+        finally:
+            self._exporting = False

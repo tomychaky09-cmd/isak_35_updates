@@ -48,7 +48,50 @@ class DatabaseManager:
         else:
             print(f"[*] Menggunakan MySQL: {self.mysql_config.get('host')}")
             
+        self._ensure_database_exists()
         self._update_schema()
+
+    def _ensure_database_exists(self):
+        """Memastikan database target sudah ada di server (MySQL/SQL Server)."""
+        if self.db_type == "mysql" and MYSQL_AVAILABLE:
+            try:
+                # Koneksi ke server TANPA menentukan database
+                conn = mysql.connector.connect(
+                    host=self.mysql_config.get("host"),
+                    user=self.mysql_config.get("user"),
+                    password=self.mysql_config.get("password")
+                )
+                cursor = conn.cursor()
+                db_name = self.mysql_config.get("database")
+                if db_name:
+                    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
+                    print(f"[*] Database MySQL '{db_name}' dipastikan tersedia.")
+                conn.close()
+            except Exception as e:
+                print(f"[!] Peringatan: Gagal mengecek/membuat database MySQL: {e}")
+
+        elif self.db_type == "sqlserver" and SQLSERVER_AVAILABLE:
+            try:
+                driver = self.sqlserver_config.get("driver", "ODBC Driver 17 for SQL Server")
+                server = self.sqlserver_config.get("host")
+                uid = self.sqlserver_config.get("user")
+                pwd = self.sqlserver_config.get("password")
+                db_name = self.sqlserver_config.get("database")
+                
+                # Koneksi ke database 'master' untuk membuat database baru
+                conn_str = f'DRIVER={{{driver}}};SERVER={server};DATABASE=master;UID={uid};PWD={pwd}'
+                conn = pyodbc.connect(conn_str, autocommit=True)
+                cursor = conn.cursor()
+                
+                # Cek apakah database sudah ada
+                cursor.execute(f"SELECT name FROM sys.databases WHERE name = '{db_name}'")
+                if not cursor.fetchone():
+                    cursor.execute(f"CREATE DATABASE [{db_name}]")
+                    print(f"[*] Database SQL Server '{db_name}' berhasil dibuat.")
+                
+                conn.close()
+            except Exception as e:
+                print(f"[!] Peringatan: Gagal mengecek/membuat database SQL Server: {e}")
 
     def load_config(self):
         if os.path.exists(self.CONFIG_FILE):
@@ -59,33 +102,39 @@ class DatabaseManager:
         return {}
 
     def get_connection(self):
-        if self.db_type == "mysql" and MYSQL_AVAILABLE:
-            try:
-                conn = mysql.connector.connect(
-                    host=self.mysql_config.get("host"),
-                    user=self.mysql_config.get("user"),
-                    password=self.mysql_config.get("password"),
-                    database=self.mysql_config.get("database")
-                )
-                return conn
-            except Exception as e:
-                print(f"Gagal koneksi MySQL, fallback ke SQLite: {e}")
-                self.db_type = "sqlite"
-        elif self.db_type == "sqlserver" and SQLSERVER_AVAILABLE:
-            try:
-                # Driver example: 'ODBC Driver 17 for SQL Server'
-                driver = self.sqlserver_config.get("driver", "ODBC Driver 17 for SQL Server")
-                server = self.sqlserver_config.get("host")
-                database = self.sqlserver_config.get("database")
-                uid = self.sqlserver_config.get("user")
-                pwd = self.sqlserver_config.get("password")
-                
-                conn_str = f'DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}'
-                conn = pyodbc.connect(conn_str)
-                return conn
-            except Exception as e:
-                print(f"Gagal koneksi SQL Server, fallback ke SQLite: {e}")
-                self.db_type = "sqlite"
+        if self.db_type == "mysql":
+            if MYSQL_AVAILABLE:
+                try:
+                    conn = mysql.connector.connect(
+                        host=self.mysql_config.get("host"),
+                        user=self.mysql_config.get("user"),
+                        password=self.mysql_config.get("password"),
+                        database=self.mysql_config.get("database")
+                    )
+                    return conn
+                except Exception as e:
+                    print(f"Gagal koneksi MySQL: {e}. Fallback ke SQLite.")
+            else:
+                print("Driver 'mysql-connector-python' tidak ditemukan. Fallback ke SQLite.")
+            
+            self.db_type = "sqlite" # Update status agar syntax ikut berubah
+            
+        elif self.db_type == "sqlserver":
+            if SQLSERVER_AVAILABLE:
+                try:
+                    driver = self.sqlserver_config.get("driver", "ODBC Driver 17 for SQL Server")
+                    server = self.sqlserver_config.get("host")
+                    database = self.sqlserver_config.get("database")
+                    uid = self.sqlserver_config.get("user")
+                    pwd = self.sqlserver_config.get("password")
+                    conn_str = f'DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}'
+                    return pyodbc.connect(conn_str)
+                except Exception as e:
+                    print(f"Gagal koneksi SQL Server: {e}. Fallback ke SQLite.")
+            else:
+                print("Driver 'pyodbc' tidak ditemukan. Fallback ke SQLite.")
+            
+            self.db_type = "sqlite"
         
         return sqlite3.connect(self.db_path)
 
@@ -191,11 +240,19 @@ class DatabaseManager:
 
         # --- MIGRASI OTOMATIS: Tambah kolom 'notes' jika belum ada ---
         try:
-            cursor.execute("PRAGMA table_info(accounts)")
-            res = cursor.fetchall()
-            columns = [row[1] for row in res]
-            if "notes" not in columns:
-                print("[MIGRATION] Menambahkan kolom 'notes' ke tabel accounts...")
+            if self.db_type == "mysql":
+                cursor.execute(f"SHOW COLUMNS FROM accounts LIKE 'notes'")
+                exists = cursor.fetchone()
+            elif self.db_type == "sqlserver":
+                cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'accounts' AND COLUMN_NAME = 'notes'")
+                exists = cursor.fetchone()
+            else: # sqlite
+                cursor.execute("PRAGMA table_info(accounts)")
+                res = cursor.fetchall()
+                exists = any(row[1] == "notes" for row in res)
+
+            if not exists:
+                print(f"[MIGRATION] Menambahkan kolom 'notes' ke tabel accounts di {self.db_type}...")
                 cursor.execute("ALTER TABLE accounts ADD COLUMN notes TEXT")
                 conn.commit()
         except Exception as e:
@@ -608,16 +665,82 @@ class DatabaseManager:
                 a.name as 'Nama Akun',
                 d.debit as 'Debit',
                 d.credit as 'Kredit',
-                '' as 'Kategori Arus Kas',
+                cfc.main_category as 'Kategori Arus Kas',
                 d.cash_flow_activity as 'Aktivitas Arus Kas',
-                j.notes as 'Catatan'
+                '' as 'Catatan'
             FROM journal_entries j
             JOIN journal_details d ON j.id = d.journal_id
             JOIN accounts a ON d.account_id = a.id
+            LEFT JOIN cash_flow_categories cfc ON d.cash_flow_activity = cfc.name
             ORDER BY j.date DESC, j.id DESC, a.code ASC
         '''
-        conn = sqlite3.connect(self.db_path)
+        conn = self.get_connection()
         df = pd.read_sql_query(query, conn)
         conn.close()
         return df
+
+    def generate_full_backup(self):
+        """Mengambil seluruh data dari semua tabel untuk dipindahkan/cadangkan."""
+        backup_data = {}
+        tables = self.get_all_data_table_names()
+        conn = self.get_connection()
+        try:
+            for table in tables:
+                df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
+                # Ubah NaN (Not a Number) menjadi None agar bisa terbaca sebagai NULL di SQL
+                df_clean = df.where(pd.notnull(df), None)
+                backup_data[table] = df_clean.to_dict('records')
+            return backup_data
+        except Exception as e:
+            print(f"Backup Error: {e}")
+            return None
+        finally:
+            conn.close()
+
+    def restore_full_backup(self, backup_data):
+        """Memasukkan seluruh data dari backup ke database aktif."""
+        if not backup_data: return False, "Data backup kosong."
+        
+        import math
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            # 1. Hapus data lama di semua tabel
+            delete_order = ['journal_details', 'journal_entries', 'accounts', 'cash_flow_categories', 'assets_inventory', 'donors']
+            for table in delete_order:
+                if table in self.get_all_data_table_names():
+                    cursor.execute(f"DELETE FROM {table}")
+            
+            # 2. Masukkan data baru per tabel
+            insert_order = ['accounts', 'cash_flow_categories', 'assets_inventory', 'donors', 'journal_entries', 'journal_details']
+            
+            for table in insert_order:
+                if table not in backup_data: continue
+                rows = backup_data[table]
+                if not rows: continue
+                
+                columns = rows[0].keys()
+                # Buat query insert dinamis
+                cols_str = ", ".join([f"`{c}`" if self.db_type == "mysql" else f"[{c}]" if self.db_type == "sqlserver" else c for c in columns])
+                placeholders = ", ".join(["%s" if self.db_type == "mysql" else "?" for _ in columns])
+                query = f"INSERT INTO {table} ({cols_str}) VALUES ({placeholders})"
+                
+                for row in rows:
+                    # BERSIHKAN DATA: Ubah float NaN menjadi None (NULL)
+                    clean_values = []
+                    for val in row.values():
+                        if isinstance(val, float) and math.isnan(val):
+                            clean_values.append(None)
+                        else:
+                            clean_values.append(val)
+                    
+                    cursor.execute(query, tuple(clean_values))
+            
+            conn.commit()
+            return True, "Berhasil memulihkan seluruh data."
+        except Exception as e:
+            conn.rollback()
+            return False, f"Restore Error: {str(e)}"
+        finally:
+            conn.close()
 
