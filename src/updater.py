@@ -6,7 +6,7 @@ import subprocess
 import shutil
 from PySide6.QtCore import QThread, Signal
 
-VERSION = "1.0.9"
+VERSION = "1.1.0"
 # Ganti 'main' dengan nama branch Anda (biasanya 'main' atau 'master')
 UPDATE_URL = "https://raw.githubusercontent.com/tomychaky09-cmd/isak_35_updates/master/version.json"
 
