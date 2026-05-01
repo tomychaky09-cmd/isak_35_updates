@@ -3,8 +3,10 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QTabWidget, QComboBox, QFileDialog, QMessageBox)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
+from datetime import datetime
 from ..database_manager import DatabaseManager
 from ..report_generator import ReportGenerator
+from .annual_report_dialog import AnnualReportDialog
 
 class ReportView(QWidget):
     def __init__(self):
@@ -42,11 +44,19 @@ class ReportView(QWidget):
             QPushButton:hover { background-color: #219150; }
         """)
         self.btn_export.clicked.connect(self.handle_export)
+
+        self.btn_annual_report = QPushButton("🏆 Laporan Tahunan")
+        self.btn_annual_report.setStyleSheet("""
+            QPushButton { background-color: #8e44ad; color: white; padding: 10px 15px; border-radius: 6px; font-weight: bold; }
+            QPushButton:hover { background-color: #7d3c98; }
+        """)
+        self.btn_annual_report.clicked.connect(self.handle_annual_report)
         
         header_layout.addWidget(title)
         header_layout.addStretch()
         header_layout.addWidget(btn_refresh)
         header_layout.addWidget(self.btn_export)
+        header_layout.addWidget(self.btn_annual_report)
         layout.addWidget(header_widget)
 
         # Tabs Styling
@@ -257,7 +267,15 @@ class ReportView(QWidget):
                     font = item.font()
                     font.setBold(True)
                     item.setFont(font)
-                    item.setBackground(QColor("#f1f2f6"))
+                    
+                    # Cek Balance
+                    is_balanced = abs(row_data['debit'] - row_data['credit']) < 0.01
+                    if is_balanced:
+                        item.setBackground(QColor("#27ae60")) # Hijau jika seimbang
+                        item.setForeground(Qt.GlobalColor.white)
+                    else:
+                        item.setBackground(QColor("#e74c3c")) # Merah jika tidak seimbang
+                        item.setForeground(Qt.GlobalColor.white)
 
                 self.table_neraca_saldo.setItem(row_idx, col_idx, item)
 
@@ -345,3 +363,32 @@ class ReportView(QWidget):
                     QMessageBox.critical(self, "Gagal", "Terjadi kesalahan saat mengekspor laporan.")
         finally:
             self._exporting = False
+
+    def handle_annual_report(self):
+        year = datetime.now().year
+        dialog = AnnualReportDialog(self.db, year)
+        if dialog.exec():
+            # Dialog Pilihan Format
+            msg = QMessageBox()
+            msg.setWindowTitle("Pilih Format Laporan")
+            msg.setText(f"Data narasi tahun {year} berhasil disimpan.\nPilih format file yang ingin Anda ekspor:")
+            btn_pdf = msg.addButton("📄 Simpan PDF", QMessageBox.ActionRole)
+            btn_excel = msg.addButton("📊 Simpan Excel", QMessageBox.ActionRole)
+            btn_cancel = msg.addButton("Batal", QMessageBox.RejectRole)
+            msg.exec()
+
+            if msg.clickedButton() == btn_pdf:
+                path, _ = QFileDialog.getSaveFileName(self, "Simpan Laporan PDF", f"Laporan_Tahunan_Yayasan_{year}.pdf", "PDF Files (*.pdf)")
+                if path:
+                    if self.report_gen.export_annual_report_to_pdf(path, year):
+                        QMessageBox.information(self, "Berhasil", f"Laporan Tahunan PDF berhasil disimpan di:\n{path}")
+                    else:
+                        QMessageBox.critical(self, "Gagal", "Terjadi kesalahan saat mengekspor PDF.")
+            
+            elif msg.clickedButton() == btn_excel:
+                path, _ = QFileDialog.getSaveFileName(self, "Simpan Laporan Excel", f"Laporan_Tahunan_Yayasan_{year}.xlsx", "Excel Files (*.xlsx)")
+                if path:
+                    if self.report_gen.export_annual_report_to_excel(path, year):
+                        QMessageBox.information(self, "Berhasil", f"Laporan Tahunan Excel berhasil disimpan di:\n{path}")
+                    else:
+                        QMessageBox.critical(self, "Gagal", "Terjadi kesalahan saat mengekspor Excel.")

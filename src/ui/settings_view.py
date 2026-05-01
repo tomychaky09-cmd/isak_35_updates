@@ -36,6 +36,30 @@ class SettingsView(QWidget):
             }
         """
 
+        # --- Foundation Profile Section ---
+        profile_title = QLabel("🏢 PROFIL YAYASAN")
+        profile_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50; margin-top: 10px;")
+        container_layout.addWidget(profile_title)
+        
+        self.profile_group = QFrame()
+        self.profile_layout = QFormLayout(self.profile_group)
+        self.f_name = QLineEdit()
+        self.f_address = QLineEdit()
+        self.f_phone = QLineEdit()
+        self.f_email = QLineEdit()
+        self.f_leader = QLineEdit()
+        
+        for le in [self.f_name, self.f_address, self.f_phone, self.f_email, self.f_leader]: 
+            le.setStyleSheet(input_style)
+        
+        self.profile_layout.addRow("Nama Yayasan:", self.f_name)
+        self.profile_layout.addRow("Alamat Lengkap:", self.f_address)
+        self.profile_layout.addRow("Telepon/WA:", self.f_phone)
+        self.profile_layout.addRow("Email:", self.f_email)
+        self.profile_layout.addRow("Nama Ketua/Pimpinan:", self.f_leader)
+        container_layout.addWidget(self.profile_group)
+        container_layout.addSpacing(10)
+
         # --- Navigation Position ---
         container_layout.addWidget(QLabel("<b>Posisi Navigasi Menu:</b>"))
         self.combo_pos = QComboBox()
@@ -198,6 +222,20 @@ class SettingsView(QWidget):
         self.mssql_group.setVisible(text == "SQL Server (Server)")
 
     def save_settings(self):
+        from src.database_manager import DatabaseManager
+        db = DatabaseManager()
+        
+        # Simpan Profil Yayasan
+        profile_data = {
+            "name": self.f_name.text(),
+            "address": self.f_address.text(),
+            "phone": self.f_phone.text(),
+            "email": self.f_email.text(),
+            "leader_name": self.f_leader.text()
+        }
+        db.save_foundation_profile(profile_data)
+
+        # Simpan Pengaturan Tampilan & DB (Emit ke Main Window)
         pos_map = {"Kiri (Default)": "left", "Kanan": "right", "Atas": "top", "Bawah": "bottom"}
         theme_map = {"Standard (Modern Blue)": "standard", "Dark Mode": "dark", "Classic C++ Style": "classic"}
         
@@ -229,9 +267,21 @@ class SettingsView(QWidget):
             "sqlserver_config": sqlserver_config
         })
         
-        QMessageBox.information(self, "Sukses", "Pengaturan telah disimpan. Beberapa perubahan mungkin memerlukan restart aplikasi.")
+        QMessageBox.information(self, "Sukses", "Pengaturan profil dan sistem telah disimpan.")
 
     def set_current_settings(self, pos, theme, db_type="sqlite", mysql_config=None, sqlserver_config=None):
+        from src.database_manager import DatabaseManager
+        db = DatabaseManager()
+        
+        # Load Profil Yayasan
+        profile = db.get_foundation_profile()
+        self.f_name.setText(profile.get('name', ''))
+        self.f_address.setText(profile.get('address', ''))
+        self.f_phone.setText(profile.get('phone', ''))
+        self.f_email.setText(profile.get('email', ''))
+        self.f_leader.setText(profile.get('leader_name', ''))
+
+        # Sisanya tetap sama
         pos_inv = {"left": "Kiri (Default)", "right": "Kanan", "top": "Atas", "bottom": "Bawah"}
         theme_inv = {"standard": "Standard (Modern Blue)", "dark": "Dark Mode", "classic": "Classic C++ Style"}
         

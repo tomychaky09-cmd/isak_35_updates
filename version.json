@@ -1,5 +1,5 @@
 {
-    "version": "1.1.0",
-    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.1.0/ISAK35.exe",
-    "changelog": "Update v1.1.0: Perbaikan baris Total di Neraca Saldo (dengan indikator Balance), Penambahan user_settings.json, dan perbaikan sistem update."
+    "version": "1.2.0",
+    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.0/ISAK35.exe",
+    "changelog": "Update v1.2.0: Implementasi Modul Laporan Tahunan Pengurus lengkap dengan ekspor PDF & Excel, Pengaturan Profil Yayasan, dan sistem Tanda Tangan otomatis."
 }

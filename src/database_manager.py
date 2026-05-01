@@ -228,6 +228,26 @@ class DatabaseManager:
                     donor_type VARCHAR(50),
                     description TEXT
                 )
+            """,
+            "annual_report_settings": f"""
+                CREATE TABLE IF NOT EXISTS annual_report_settings (
+                    id {pk_type},
+                    year INTEGER UNIQUE,
+                    vision TEXT,
+                    mission TEXT,
+                    program_summary TEXT,
+                    organizational_structure TEXT
+                )
+            """,
+            "foundation_profile": f"""
+                CREATE TABLE IF NOT EXISTS foundation_profile (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    name VARCHAR(255),
+                    address TEXT,
+                    phone VARCHAR(50),
+                    email VARCHAR(100),
+                    leader_name VARCHAR(255)
+                )
             """
         }
 
@@ -743,4 +763,72 @@ class DatabaseManager:
             return False, f"Restore Error: {str(e)}"
         finally:
             conn.close()
+
+    def get_annual_report_settings(self, year):
+        query = "SELECT vision, mission, program_summary, organizational_structure, program_detail_edu, program_detail_social, evaluation_constraints, future_plans FROM annual_report_settings WHERE year = ?"
+        result = self._execute_query(query, (year,), fetch=True)
+        if result:
+            return {
+                'vision': result[0][0],
+                'mission': result[0][1],
+                'program_summary': result[0][2],
+                'organizational_structure': result[0][3],
+                'program_detail_edu': result[0][4],
+                'program_detail_social': result[0][5],
+                'evaluation_constraints': result[0][6],
+                'future_plans': result[0][7]
+            }
+        return {
+            'vision': '', 'mission': '', 'program_summary': '', 
+            'organizational_structure': '', 'program_detail_edu': '', 
+            'program_detail_social': '', 'evaluation_constraints': '', 
+            'future_plans': ''
+        }
+
+    def save_annual_report_settings(self, year, data):
+        check_query = "SELECT id FROM annual_report_settings WHERE year = ?"
+        exists = self._execute_query(check_query, (year,), fetch=True)
+        
+        if exists:
+            query = """UPDATE annual_report_settings SET 
+                       vision = ?, mission = ?, program_summary = ?, organizational_structure = ?,
+                       program_detail_edu = ?, program_detail_social = ?, 
+                       evaluation_constraints = ?, future_plans = ? 
+                       WHERE year = ?"""
+            self._execute_query(query, (
+                data['vision'], data['mission'], data['program_summary'], data['organizational_structure'],
+                data['program_detail_edu'], data['program_detail_social'],
+                data['evaluation_constraints'], data['future_plans'], year
+            ))
+        else:
+            query = """INSERT INTO annual_report_settings 
+                       (year, vision, mission, program_summary, organizational_structure,
+                        program_detail_edu, program_detail_social, evaluation_constraints, future_plans) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+            self._execute_query(query, (
+                year, data['vision'], data['mission'], data['program_summary'], data['organizational_structure'],
+                data['program_detail_edu'], data['program_detail_social'],
+                data['evaluation_constraints'], data['future_plans']
+            ))
+
+    def get_foundation_profile(self):
+        query = "SELECT name, address, phone, email, leader_name, pembina_name, pengawas_name FROM foundation_profile WHERE id = 1"
+        result = self._execute_query(query, fetch=True)
+        if result:
+            return {
+                'name': result[0][0], 'address': result[0][1], 'phone': result[0][2],
+                'email': result[0][3], 'leader_name': result[0][4],
+                'pembina_name': result[0][5] or '-', 'pengawas_name': result[0][6] or '-'
+            }
+        return {'name': 'Nama Yayasan', 'address': '-', 'phone': '-', 'email': '-', 'leader_name': '-', 'pembina_name': '-', 'pengawas_name': '-'}
+
+    def save_foundation_profile(self, data):
+        check_query = "SELECT id FROM foundation_profile WHERE id = 1"
+        exists = self._execute_query(check_query, fetch=True)
+        if exists:
+            up_query = "UPDATE foundation_profile SET name = ?, address = ?, phone = ?, email = ?, leader_name = ?, pembina_name = ?, pengawas_name = ? WHERE id = 1"
+            self._execute_query(up_query, (data['name'], data['address'], data['phone'], data['email'], data['leader_name'], data['pembina_name'], data['pengawas_name']))
+        else:
+            in_query = "INSERT INTO foundation_profile (id, name, address, phone, email, leader_name, pembina_name, pengawas_name) VALUES (1, ?, ?, ?, ?, ?, ?, ?)"
+            self._execute_query(in_query, (data['name'], data['address'], data['phone'], data['email'], data['leader_name'], data['pembina_name'], data['pengawas_name']))
 
