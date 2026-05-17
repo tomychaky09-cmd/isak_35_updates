@@ -516,24 +516,42 @@ class DatabaseManager:
         FROM accounts a
         LEFT JOIN journal_details jd ON a.id = jd.account_id
         GROUP BY a.id, a.code, a.name, a.type, a.category
+        ORDER BY a.code
         """
         conn = self.get_connection()
         df = pd.read_sql_query(query, conn)
         conn.close()
+        
+        # Pastikan kolom ada dan numerik
         df['total_debit'] = pd.to_numeric(df['total_debit'].fillna(0), errors='coerce').fillna(0)
         df['total_credit'] = pd.to_numeric(df['total_credit'].fillna(0), errors='coerce').fillna(0)
-        df['debit'] = 0.0; df['credit'] = 0.0; df['balance'] = 0.0
+        
+        # Inisialisasi kolom hasil
+        df['debit'] = 0.0
+        df['credit'] = 0.0
+        df['balance'] = 0.0
+        
         for index, row in df.iterrows():
-            if row['type'] in ['Asset', 'Expense']:
-                balance = row['total_debit'] - row['total_credit']
-                df.at[index, 'balance'] = balance
-                if balance >= 0: df.at[index, 'debit'] = balance
-                else: df.at[index, 'credit'] = abs(balance)
+            acc_type = row['type']
+            td = row['total_debit']
+            tc = row['total_credit']
+            
+            if acc_type in ['Asset', 'Expense']:
+                # Saldo normal Debet
+                bal = td - tc
+                df.at[index, 'balance'] = bal
+                if bal >= 0:
+                    df.at[index, 'debit'] = bal
+                else:
+                    df.at[index, 'credit'] = abs(bal)
             else:
-                balance = row['total_credit'] - row['total_debit']
-                df.at[index, 'balance'] = balance
-                if balance >= 0: df.at[index, 'credit'] = balance
-                else: df.at[index, 'debit'] = abs(balance)
+                # Saldo normal Kredit (Liability, Asset Net, Revenue)
+                bal = tc - td
+                df.at[index, 'balance'] = bal
+                if bal >= 0:
+                    df.at[index, 'credit'] = bal
+                else:
+                    df.at[index, 'debit'] = abs(bal)
         return df
 
     def get_ledger_entries(self, account_id):
