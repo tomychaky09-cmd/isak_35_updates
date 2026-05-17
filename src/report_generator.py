@@ -34,10 +34,27 @@ class ReportGenerator:
         total_assets = assets_df['balance'].sum() - contra_assets_df['balance'].sum()
         liabilities_df = df[df['type'] == 'Liability']
         total_liabilities = liabilities_df['balance'].sum()
+        
+        # Aset Neto Awal (dari COA Tipe Asset Net)
         net_assets_without = filter_category(df[df['type'] == 'Asset Net'], 'without')['balance'].sum()
         net_assets_with = filter_category(df[df['type'] == 'Asset Net'], 'with')['balance'].sum()
-        surplus_without = filter_category(df[df['type'] == 'Revenue'], 'without')['balance'].sum() - df[(df['type'] == 'Expense')]['balance'].sum()
-        surplus_with = filter_category(df[df['type'] == 'Revenue'], 'with')['balance'].sum()
+        
+        # Surplus/Defisit Berjalan (Revenue - Expense) per Kategori
+        rev_without = filter_category(df[df['type'] == 'Revenue'], 'without')['balance'].sum()
+        rev_with = filter_category(df[df['type'] == 'Revenue'], 'with')['balance'].sum()
+        
+        # Perbaikan: Beban sekarang dipisahkan berdasarkan kategori COA-nya
+        exp_without = filter_category(df[df['type'] == 'Expense'], 'without')['balance'].sum()
+        exp_with = filter_category(df[df['type'] == 'Expense'], 'with')['balance'].sum()
+        
+        # Jika ada beban yang tidak memiliki kategori di COA, masukkan ke Tanpa Pembatasan
+        total_exp_real = df[df['type'] == 'Expense']['balance'].sum()
+        exp_uncategorized = total_exp_real - (exp_without + exp_with)
+        exp_without += exp_uncategorized
+        
+        surplus_without = rev_without - exp_without
+        surplus_with = rev_with - exp_with
+        
         final_net_without = net_assets_without + surplus_without
         final_net_with = net_assets_with + surplus_with
         
@@ -49,7 +66,9 @@ class ReportGenerator:
             'net_assets_without': final_net_without,
             'net_assets_with': final_net_with,
             'total_net_assets': final_net_without + final_net_with,
-            'total_liabilities_and_net_assets': total_liabilities + final_net_without + final_net_with
+            'total_liabilities_and_net_assets': total_liabilities + final_net_without + final_net_with,
+            'surplus_without': surplus_without,
+            'surplus_with': surplus_with
         }
 
     def get_comprehensive_income(self):
@@ -62,7 +81,12 @@ class ReportGenerator:
             'revenue_with': filter_cat(rev, 'dengan pembatasan').to_dict('records'),
             'expenses': exp.to_dict('records'),
             'total_revenue': rev['balance'].sum(),
-            'total_expenses': exp['balance'].sum()
+            'total_expenses': exp['balance'].sum(),
+            'total_rev_without': filter_cat(rev, 'tanpa pembatasan')['balance'].sum(),
+            'total_rev_with': filter_cat(rev, 'dengan pembatasan')['balance'].sum(),
+            # Tambahan detail beban per kategori
+            'total_exp_without': filter_cat(exp, 'tanpa pembatasan')['balance'].sum(),
+            'total_exp_with': filter_cat(exp, 'dengan pembatasan')['balance'].sum()
         }
 
     def get_statement_of_activities(self):
@@ -72,34 +96,116 @@ class ReportGenerator:
             'total_rev': data['total_revenue'],
             'expenses': data['expenses'],
             'total_exp': data['total_expenses'],
-            'total_change': data['total_revenue'] - data['total_expenses']
+            'total_change': data['total_revenue'] - data['total_expenses'],
+            # Perubahan neto per kategori
+            'change_without': data['total_rev_without'] - (data['total_expenses'] - data['total_exp_with']),
+            'change_with': data['total_rev_with'] - data['total_exp_with']
         }
 
     def get_changes_in_net_assets_report(self):
         pos = self.get_isak35_financial_position(); akt = self.get_statement_of_activities()
+        # Perubahan Periode Berjalan harus diambil dari Laporan Aktivitas (akt)
+        change_without = akt['change_without']
+        change_with = akt['change_with']
+        
+        # Aset Neto Awal = Akhir - Perubahan
+        start_without = pos['net_assets_without'] - change_without
+        start_with = pos['net_assets_with'] - change_with
+        
         return [
-            {"description": "Aset Neto Awal Periode", "without_restriction": pos['net_assets_without'] - (akt['total_rev'] - akt['total_exp']), "with_restriction": pos['net_assets_with'], "total": pos['total_net_assets'] - akt['total_change']},
-            {"description": "Perubahan Periode Berjalan", "without_restriction": akt['total_rev'] - akt['total_exp'], "with_restriction": 0, "total": akt['total_change']},
+            {"description": "Aset Neto Awal Periode", "without_restriction": start_without, "with_restriction": start_with, "total": start_without + start_with},
+            {"description": "Perubahan Periode Berjalan", "without_restriction": change_without, "with_restriction": change_with, "total": change_without + change_with},
             {"description": "Aset Neto Akhir Periode", "without_restriction": pos['net_assets_without'], "with_restriction": pos['net_assets_with'], "total": pos['total_net_assets']}
         ]
 
     def get_cash_flow_report(self):
-        query = "SELECT jd.cash_flow_activity as activity, jd.debit, jd.credit, cfc.main_category FROM journal_details jd JOIN cash_flow_categories cfc ON jd.cash_flow_activity = cfc.name"
-        conn = self.db.get_connection(); df = pd.read_sql_query(query, conn); conn.close()
+        # 1. Identifikasi Akun Kas & Bank
+        df_tb = self.db.get_trial_balance()
+        
+        def is_cash_account(row):
+            name = str(row['name']).lower()
+            return 'kas' in name or 'bank' in name or 'cash' in name
+            
+        cash_accounts = df_tb[df_tb.apply(is_cash_account, axis=1)]
+        
+        # 2. Ambil Pergerakan (Movements) dari Jurnal (EXCLUDE Saldo Awal SA-)
+        query = """
+            SELECT jd.cash_flow_activity as activity, jd.debit, jd.credit, cfc.main_category 
+            FROM journal_details jd 
+            JOIN cash_flow_categories cfc ON jd.cash_flow_activity = cfc.name
+            JOIN journal_entries je ON jd.journal_id = je.id
+            WHERE jd.cash_flow_activity IS NOT NULL
+            AND je.reference_no NOT LIKE 'SA-%'
+        """
+        conn = self.db.get_connection()
+        df_movements = pd.read_sql_query(query, conn)
+        
+        # 3. Ambil Saldo Awal Khusus (dari entri SA-)
+        query_sa = """
+            SELECT jd.account_id, SUM(jd.debit - jd.credit) as sa_amount
+            FROM journal_details jd
+            JOIN journal_entries je ON jd.journal_id = je.id
+            WHERE je.reference_no LIKE 'SA-%'
+            GROUP BY jd.account_id
+        """
+        df_sa = pd.read_sql_query(query_sa, conn)
+        conn.close()
+        
         report_data = []
-        if not df.empty:
-            df['amount'] = df['debit'] - df['credit']
-            summary = df.groupby(['main_category', 'activity'])['amount'].sum().reset_index()
-            total_all = 0
+        
+        # --- Bagian A: Arus Kas dari Aktivitas ---
+        total_net_change = 0
+        if not df_movements.empty:
+            df_movements['amount'] = df_movements['debit'] - df_movements['credit']
+            summary = df_movements.groupby(['main_category', 'activity'])['amount'].sum().reset_index()
+            
             for cat in ["ARUS KAS DARI AKTIVITAS OPERASI", "ARUS KAS DARI AKTIVITAS INVESTASI", "ARUS KAS DARI AKTIVITAS PENDANAAN"]:
                 cat_df = summary[summary['main_category'] == cat]
                 cat_total = cat_df['amount'].sum() if not cat_df.empty else 0
-                total_all += cat_total
+                total_net_change += cat_total
+                
                 report_data.append({"Keterangan": cat, "Jumlah (Rp)": ""})
-                for _, r in cat_df.iterrows(): report_data.append({"Keterangan": f"  {r['activity']}", "Jumlah (Rp)": r['amount']})
+                for _, r in cat_df.iterrows():
+                    report_data.append({"Keterangan": f"  {r['activity']}", "Jumlah (Rp)": r['amount']})
                 report_data.append({"Keterangan": f"Total {cat}", "Jumlah (Rp)": cat_total})
                 report_data.append({"Keterangan": "", "Jumlah (Rp)": ""})
-            report_data.append({"Keterangan": "KENAIKAN (PENURUNAN) BERSIH KAS", "Jumlah (Rp)": total_all})
+        
+        report_data.append({"Keterangan": "KENAIKAN (PENURUNAN) BERSIH KAS", "Jumlah (Rp)": total_net_change})
+        report_data.append({"Keterangan": "", "Jumlah (Rp)": ""})
+        
+        # --- Bagian B: Rekonsiliasi Saldo Kas ---
+        # Hitung Saldo Awal dari DF_SA
+        sa_map = df_sa.set_index('account_id')['sa_amount'].to_dict()
+        
+        cash_with_start = 0
+        cash_without_start = 0
+        
+        for _, acc in cash_accounts.iterrows():
+            aid = acc['id']
+            sa_val = sa_map.get(aid, 0)
+            if 'dengan pembatasan' in str(acc['category']).lower() or 'dengan pembatasan' in str(acc['name']).lower():
+                cash_with_start += sa_val
+            else:
+                cash_without_start += sa_val
+        
+        total_cash_start = cash_with_start + cash_without_start
+        total_cash_end = cash_accounts['balance'].sum()
+        
+        # Identifikasi Kas Akhir per Kategori
+        mask_with = (cash_accounts['category'].str.contains('dengan pembatasan', case=False, na=False)) | \
+                    (cash_accounts['name'].str.contains('dengan pembatasan', case=False, na=False))
+        cash_with_end = cash_accounts[mask_with]['balance'].sum()
+        cash_without_end = total_cash_end - cash_with_end
+
+        report_data.append({"Keterangan": "SALDO KAS PADA AWAL PERIODE", "Jumlah (Rp)": total_cash_start})
+        report_data.append({"Keterangan": "  Kas Tanpa Pembatasan (Awal)", "Jumlah (Rp)": cash_without_start})
+        report_data.append({"Keterangan": "  Kas Dengan Pembatasan (Awal)", "Jumlah (Rp)": cash_with_start})
+        
+        report_data.append({"Keterangan": "", "Jumlah (Rp)": ""})
+        report_data.append({"Keterangan": "SALDO KAS PADA AKHIR PERIODE", "Jumlah (Rp)": total_cash_end})
+        report_data.append({"Keterangan": "  Kas Tanpa Pembatasan (Akhir)", "Jumlah (Rp)": cash_without_end})
+        report_data.append({"Keterangan": "  Kas Dengan Pembatasan (Akhir)", "Jumlah (Rp)": cash_with_end})
+        
         return {"report_data": report_data}
 
     def _extract_names(self, structure_text, profile):

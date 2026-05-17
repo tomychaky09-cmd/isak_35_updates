@@ -5,3 +5,5 @@ watchdog
 mysql-connector-python
 requests
 pyodbc
+reportlab
+flask

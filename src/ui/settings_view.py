@@ -48,8 +48,10 @@ class SettingsView(QWidget):
         self.f_phone = QLineEdit()
         self.f_email = QLineEdit()
         self.f_leader = QLineEdit()
+        self.f_pembina = QLineEdit()
+        self.f_pengawas = QLineEdit()
         
-        for le in [self.f_name, self.f_address, self.f_phone, self.f_email, self.f_leader]: 
+        for le in [self.f_name, self.f_address, self.f_phone, self.f_email, self.f_leader, self.f_pembina, self.f_pengawas]: 
             le.setStyleSheet(input_style)
         
         self.profile_layout.addRow("Nama Yayasan:", self.f_name)
@@ -57,6 +59,8 @@ class SettingsView(QWidget):
         self.profile_layout.addRow("Telepon/WA:", self.f_phone)
         self.profile_layout.addRow("Email:", self.f_email)
         self.profile_layout.addRow("Nama Ketua/Pimpinan:", self.f_leader)
+        self.profile_layout.addRow("Nama Pembina:", self.f_pembina)
+        self.profile_layout.addRow("Nama Pengawas:", self.f_pengawas)
         container_layout.addWidget(self.profile_group)
         container_layout.addSpacing(10)
 

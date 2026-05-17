@@ -248,6 +248,14 @@ class DatabaseManager:
                     email VARCHAR(100),
                     leader_name VARCHAR(255)
                 )
+            """,
+            "users": f"""
+                CREATE TABLE IF NOT EXISTS users (
+                    id {pk_type},
+                    username VARCHAR(50) NOT NULL UNIQUE,
+                    password VARCHAR(255) NOT NULL,
+                    role VARCHAR(20) DEFAULT 'admin'
+                )
             """
         }
 
@@ -257,6 +265,17 @@ class DatabaseManager:
                 conn.commit()
             except Exception as e:
                 print(f"Error creating table {table_name}: {e}")
+
+        # Tambahkan user default jika belum ada
+        try:
+            cursor.execute("SELECT COUNT(*) FROM users")
+            if cursor.fetchone()[0] == 0:
+                q_user = "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
+                cursor.execute(q_user, ("admin", "admin123", "admin"))
+                conn.commit()
+                print("[*] User default 'admin' dengan password 'admin123' berhasil dibuat.")
+        except Exception as e:
+            print(f"Error checking/creating default user: {e}")
 
         # --- MIGRASI OTOMATIS: Tambah kolom 'notes' jika belum ada ---
         try:
@@ -278,26 +297,24 @@ class DatabaseManager:
         except Exception as e:
             print(f"Migration Error (accounts.notes): {e}")
 
-        # --- REKOMENDASI POIN 3: Verifikasi Akun Aset Neto Default ---
-        try:
-            # Akun Aset Neto Tanpa Pembatasan
-            self.get_account_by_name_or_create(
-                name="Aset Neto Tanpa Pembatasan", 
-                code="3110", 
-                type="Asset Net", 
-                category="Tanpa Pembatasan"
-            )
-            
-            # Akun Aset Neto Dengan Pembatasan
-            self.get_account_by_name_or_create(
-                name="Aset Neto Dengan Pembatasan", 
-                code="3120", 
-                type="Asset Net", 
-                category="Dengan Pembatasan"
-            )
-            print("[INFO] Verifikasi Akun Aset Neto Default Selesai.")
-        except Exception as e:
-            print(f"[ERROR] Gagal membuat akun default: {e}")
+        # Tambahkan kolom baru ke foundation_profile jika belum ada
+        for col in ['pembina_name', 'pengawas_name']:
+            try:
+                if self.db_type == "mysql":
+                    cursor.execute(f"SHOW COLUMNS FROM foundation_profile LIKE '{col}'")
+                    exists = cursor.fetchone()
+                elif self.db_type == "sqlserver":
+                    cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'foundation_profile' AND COLUMN_NAME = '{col}'")
+                    exists = cursor.fetchone()
+                else: # sqlite
+                    cursor.execute("PRAGMA table_info(foundation_profile)")
+                    res = cursor.fetchall()
+                    exists = any(row[1] == col for row in res)
+
+                if not exists:
+                    cursor.execute(f"ALTER TABLE foundation_profile ADD COLUMN {col} VARCHAR(255)")
+                    conn.commit()
+            except: pass
 
         # Check if cash_flow_categories is empty to add defaults
         cursor.execute("SELECT COUNT(*) FROM cash_flow_categories")
@@ -322,6 +339,29 @@ class DatabaseManager:
             conn.commit()
 
         conn.close()
+
+    def verify_login(self, username, password):
+        """Memverifikasi kredensial pengguna."""
+        query = "SELECT id, username, role FROM users WHERE username = ? AND password = ?"
+        result = self._execute_query(query, (username, password), fetch=True)
+        if result:
+            return {"id": result[0][0], "username": result[0][1], "role": result[0][2]}
+        return None
+
+    def add_user(self, username, password, role='admin'):
+        """Menambah pengguna baru."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            query = "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
+            cursor.execute(query, (username, password, role))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error adding user: {e}")
+            return False
+        finally:
+            conn.close()
 
     def get_accounts(self):
         query = "SELECT id, code, name, type, category, notes FROM accounts ORDER BY code"
@@ -381,6 +421,20 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error: {e}"); conn.rollback(); return False
         finally: conn.close()
+
+    def add_beginning_balance_entry(self, date, year, details):
+        """Mencatat saldo awal sebagai entri jurnal khusus. Menghapus yang lama jika ada (berdasarkan ref_no)."""
+        ref_no = f"SA-{year}"
+        description = f"Saldo Awal Tahun {year}"
+        
+        # Cari apakah sudah ada entry dengan ref_no ini
+        q_check = "SELECT id FROM journal_entries WHERE reference_no = %s" if self.db_type == "mysql" else "SELECT id FROM journal_entries WHERE reference_no = ?"
+        res = self._execute_query(q_check, (ref_no,), fetch=True)
+        if res:
+            for row in res:
+                self.delete_journal_entry(row[0])
+        
+        return self.add_journal_entry(date, description, ref_no, details)
 
     def bulk_add_journal_entries(self, entries_data):
         """
@@ -457,7 +511,7 @@ class DatabaseManager:
 
     def get_trial_balance(self):
         query = """
-        SELECT a.code, a.name, a.type, a.category,
+        SELECT a.id, a.code, a.name, a.type, a.category,
                SUM(jd.debit) as total_debit, SUM(jd.credit) as total_credit
         FROM accounts a
         LEFT JOIN journal_details jd ON a.id = jd.account_id

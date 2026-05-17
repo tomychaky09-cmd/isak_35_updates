@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
                              QDateEdit, QLineEdit, QComboBox, QMessageBox, QCompleter, QFrame)
 from PySide6.QtCore import QDate, Qt, Signal
 from ..database_manager import DatabaseManager
+from ..ai_manager import AIManager
 
 class JournalEntryView(QWidget):
     # Sinyal untuk memberitahu main_window agar kembali ke daftar
@@ -11,8 +12,10 @@ class JournalEntryView(QWidget):
     def __init__(self):
         super().__init__()
         self.db = DatabaseManager('database/foundation_finance.db')
+        self.ai = AIManager() # Inisialisasi AI Manager
         self.editing_journal_id = None
         self.account_list = {}
+        self.full_account_info = [] # Simpan info lengkap untuk AI
         self.cf_mapping = {} # {Kategori_Utama: [List_Aktivitas]}
         self._populate_account_list()
         self._populate_cf_mapping()
@@ -20,7 +23,12 @@ class JournalEntryView(QWidget):
 
     def _populate_account_list(self):
         accounts = self.db.get_accounts()
+        # accounts format: (id, code, name, type, category, notes)
         self.account_list = {f"{acc[1]} - {acc[2]}": acc[0] for acc in accounts}
+        self.full_account_info = [
+            {"id": acc[0], "code": acc[1], "name": acc[2], "type": acc[3], "category": acc[4]}
+            for acc in accounts
+        ]
 
     def _populate_cf_mapping(self):
         categories = self.db.get_cash_flow_categories()
@@ -52,12 +60,24 @@ class JournalEntryView(QWidget):
         self.date_input = QDateEdit(QDate.currentDate())
         self.date_input.setCalendarPopup(True)
         self.desc_input = QLineEdit()
+        self.desc_input.setPlaceholderText("Masukkan deskripsi transaksi...")
         self.ref_input = QLineEdit()
+        
+        # Tombol Saran AI
+        self.btn_ai = QPushButton("🤖 Saran")
+        self.btn_ai.setStyleSheet("""
+            QPushButton { 
+                background-color: #8e44ad; color: white; font-weight: bold; 
+                padding: 5px 15px; border-radius: 4px;
+            }
+            QPushButton:hover { background-color: #9b59b6; }
+        """)
         
         header_layout.addWidget(QLabel("Tanggal:"))
         header_layout.addWidget(self.date_input)
         header_layout.addWidget(QLabel("Deskripsi:"))
         header_layout.addWidget(self.desc_input, 2)
+        header_layout.addWidget(self.btn_ai)
         header_layout.addWidget(QLabel("Ref:"))
         header_layout.addWidget(self.ref_input)
         layout.addWidget(header_box)
@@ -101,10 +121,127 @@ class JournalEntryView(QWidget):
         self.btn_back.clicked.connect(self.back_requested.emit)
         self.btn_add_row.clicked.connect(self.add_new_row)
         self.btn_save.clicked.connect(self.save_journal)
+        self.btn_ai.clicked.connect(self.get_ai_suggestion)
         self.table.itemChanged.connect(self.update_totals)
         
         self.reset_form()
 
+    def get_ai_suggestion(self):
+        desc = self.desc_input.text().strip()
+        if not desc:
+            QMessageBox.warning(self, "AI Assistant", "Silakan isi deskripsi terlebih dahulu.")
+            return
+
+        self.btn_ai.setText("⏳ Menganalisis...")
+        self.btn_ai.setEnabled(False)
+        
+        # Jalankan di background jika memungkinkan, tapi untuk prototipe ini kita gunakan blocking call
+        # dengan repaint agar UI tidak terlihat hang (sebenarnya lebih baik pakai QThread)
+        self.repaint()
+        
+        suggestion = self.ai.get_accounting_suggestion(desc, self.full_account_info, self.cf_mapping)
+        
+        self.btn_ai.setText("🤖 Saran AI")
+        self.btn_ai.setEnabled(True)
+
+        if "error" in suggestion:
+            QMessageBox.critical(self, "AI Error", f"Gagal mendapatkan saran: {suggestion['error']}")
+            return
+
+        # Tampilkan saran ke user
+        msg = f"<b>Kesimpulan AI:</b><br>{suggestion.get('kesimpulan', 'Analisis tidak tersedia.')}<br><br><b>Saran Jurnal:</b><br>"
+        for item in suggestion.get('saran', []):
+            akun = item.get('akun', 'Akun tidak dikenal')
+            posisi = item.get('posisi', 'Debet/Kredit')
+            alasan = item.get('alasan', '') # Gunakan string kosong jika tidak ada
+            
+            msg += f"- {akun} ({posisi})"
+            if alasan:
+                msg += f": {alasan}"
+            msg += "<br>"
+        
+        msg += "<br>Apakah Anda ingin menerapkan saran ini ke tabel?"
+        
+        reply = QMessageBox.question(self, "AI Assistant", msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.apply_ai_suggestion(suggestion)
+
+    def apply_ai_suggestion(self, suggestion_data):
+        saran_list = suggestion_data.get('saran', [])
+        # Ambil nominal, bersihkan jika AI memberikan string berformat (Rp 500.000)
+        raw_nominal = str(suggestion_data.get('nominal', 0))
+        import re
+        clean_nominal_str = "".join(re.findall(r'\d+', raw_nominal))
+        nominal = float(clean_nominal_str) if clean_nominal_str else 0
+        
+        self.table.setRowCount(0)
+        for i, item in enumerate(saran_list):
+            self.add_new_row()
+            combo = self.table.cellWidget(i, 0)
+            if combo:
+                target_account = item.get('akun', '')
+                found = False
+                
+                # 1. Cek match persis
+                if target_account in self.account_list:
+                    combo.setCurrentText(target_account)
+                    found = True
+                
+                # 2. Cek berdasarkan kode (jika AI hanya kasih kode di awal)
+                if not found:
+                    code_match = re.search(r'^(\d+)', target_account)
+                    if code_match:
+                        target_code = code_match.group(1)
+                        for acc_full_name in self.account_list.keys():
+                            if acc_full_name.startswith(target_code):
+                                combo.setCurrentText(acc_full_name)
+                                found = True
+                                break
+                
+                # 3. Cek berdasarkan nama saja
+                if not found:
+                    for acc_full_name in self.account_list.keys():
+                        if target_account.lower() in acc_full_name.lower():
+                            combo.setCurrentText(acc_full_name)
+                            found = True
+                            break
+            
+            # Isi nominal
+            posisi = item.get('posisi', '').lower()
+            if 'debet' in posisi or 'debit' in posisi:
+                self.table.item(i, 1).setText(f"{nominal:,.0f}")
+                self.table.item(i, 2).setText("0")
+            elif 'kredit' in posisi or 'credit' in posisi:
+                self.table.item(i, 1).setText("0")
+                self.table.item(i, 2).setText(f"{nominal:,.0f}")
+            
+            # Isi Arus Kas jika ada saran
+            main_cat = item.get('arus_kas_utama', '')
+            activity = item.get('arus_kas_aktivitas', '')
+            
+            if main_cat:
+                main_combo = self.table.cellWidget(i, 3)
+                if main_combo:
+                    # Cari index yang paling cocok
+                    for idx in range(main_combo.count()):
+                        if main_cat.lower() in main_combo.itemText(idx).lower():
+                            main_combo.setCurrentIndex(idx)
+                            # Trigger update untuk activity combo
+                            self._update_activity_options(i, main_combo.itemText(idx))
+                            
+                            if activity:
+                                act_combo = self.table.cellWidget(i, 4)
+                                if act_combo:
+                                    # Cari aktivitas yang paling mirip
+                                    for a_idx in range(act_combo.count()):
+                                        if activity.lower() in act_combo.itemText(a_idx).lower():
+                                            act_combo.setCurrentIndex(a_idx)
+                                            break
+                            break
+        
+        self.update_totals()
+            
     def _setup_account_combo_widget(self, row):
         combo = QComboBox()
         combo.setEditable(True)
