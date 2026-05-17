@@ -130,7 +130,9 @@ class ReportGenerator:
     def get_cash_flow_report(self):
         # 1. Identifikasi Akun Kas & Bank
         df_tb = self.db.get_trial_balance()
-        
+        if 'balance' not in df_tb.columns:
+            df_tb['balance'] = 0.0
+            
         def is_cash_account(row):
             name = str(row['name']).lower()
             return 'kas' in name or 'bank' in name or 'cash' in name

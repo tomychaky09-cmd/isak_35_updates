@@ -238,13 +238,28 @@ class MainWindow(QMainWindow):
     def refresh_dashboard_data(self):
         try:
             df = self.db.get_trial_balance()
+            if 'balance' not in df.columns:
+                df['balance'] = 0.0
+                
             total_debit = df['total_debit'].sum(); total_credit = df['total_credit'].sum(); is_balanced = abs(total_debit - total_credit) < 0.01
             if is_balanced: self.lbl_balance_status.setText("✔️ SISTEM SEIMBANG"); self.lbl_balance_status.setStyleSheet("background-color: #2ecc71; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold;")
             else: self.lbl_balance_status.setText(f"⚠️ TIDAK SEIMBANG: Rp {abs(total_debit-total_credit):,.0f}"); self.lbl_balance_status.setStyleSheet("background-color: #e74c3c; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold;")
-            total_asset = df[df['type'] == 'Asset']['balance'].sum() - df[df['type'] == 'Asset (Contra)']['balance'].sum()
-            total_revenue = df[df['type'] == 'Revenue']['balance'].sum(); total_expense = df[df['type'] == 'Expense']['balance'].sum(); surplus = total_revenue - total_expense
-            self.update_card(self.card_asset, f"Rp {total_asset:,.0f}"); self.update_card(self.card_revenue, f"Rp {total_revenue:,.0f}"); self.update_card(self.card_expense, f"Rp {total_expense:,.0f}")
-            surplus_title = "SURPLUS BERJALAN" if surplus >= 0 else "DEFISIT BERJALAN"; surplus_color = "#27ae60" if surplus >= 0 else "#e67e22"
+            
+            # Hitung total aset, revenue, expense dengan aman
+            assets = df[df['type'] == 'Asset']
+            contra = df[df['type'] == 'Asset (Contra)']
+            total_asset = assets['balance'].sum() - contra['balance'].sum()
+            
+            total_revenue = df[df['type'] == 'Revenue']['balance'].sum()
+            total_expense = df[df['type'] == 'Expense']['balance'].sum()
+            surplus = total_revenue - total_expense
+            
+            self.update_card(self.card_asset, f"Rp {total_asset:,.0f}")
+            self.update_card(self.card_revenue, f"Rp {total_revenue:,.0f}")
+            self.update_card(self.card_expense, f"Rp {total_expense:,.0f}")
+            
+            surplus_title = "SURPLUS BERJALAN" if surplus >= 0 else "DEFISIT BERJALAN"
+            surplus_color = "#27ae60" if surplus >= 0 else "#e67e22"
             self.update_card(self.card_surplus, f"Rp {abs(surplus):,.0f}", surplus_title, surplus_color)
         except Exception as e: print(f"Refresh Dashboard Error: {e}")
 
