@@ -1,5 +1,5 @@
 {
     "version": "1.2.1",
-    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.0/ISAK35.exe",
+    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.1/ISAK35.exe",
     "changelog": "Update v1.2.1: Perbaikan bug fatal pada input Saldo Awal, peningkatan akurasi Laporan Arus Kas dengan deteksi saldo awal kategori, dan distribusi beban otomatis pada Laporan Perubahan Aset sesuai kategori COA."
 }
