@@ -1,5 +1,5 @@
 {
-    "version": "1.2.5",
-    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.5/ISAK35.exe",
-    "changelog": "Update v1.2.5: Perbaikan arsitektur pelaporan. Implementasi 'Safe-DataFrame' yang menjamin data tidak crash meskipun database kosong atau tidak sinkron. Build bersih tanpa cache."
+    "version": "1.2.6",
+    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.6/ISAK35.exe",
+    "changelog": "Update v1.2.6: Rilis stabil final. Seluruh pengamanan 'Safe-Balance' telah aktif, bug pelaporan tuntas, dan jendela debug (konsol) telah dihilangkan untuk kenyamanan pengguna."
 }
