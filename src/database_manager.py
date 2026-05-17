@@ -27,8 +27,8 @@ class DatabaseManager:
         self.sqlserver_config = self.config.get("sqlserver_config", {})
 
         if hasattr(sys, '_MEIPASS'):
-            # Path saat berjalan sebagai executable (OneFile/OneDir)
-            base_dir = sys._MEIPASS
+            # Path EXE asli (folder tempat file .exe berada)
+            base_dir = os.path.dirname(sys.executable)
         else:
             # Path saat dalam mode development
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
