@@ -23,11 +23,15 @@ class ReportGenerator:
 
     def get_isak35_financial_position(self):
         df = self.db.get_trial_balance()
+        if 'balance' not in df.columns:
+            df['balance'] = 0.0
         df['balance'] = df['balance'].fillna(0.0)
+        
         def filter_category(d, cat_type):
+            if d.empty: return pd.DataFrame(columns=d.columns)
             if cat_type == 'without': return d[d['category'].str.lower() == 'tanpa pembatasan']
             elif cat_type == 'with': return d[d['category'].str.lower() == 'dengan pembatasan']
-            return pd.DataFrame()
+            return pd.DataFrame(columns=d.columns)
         
         assets_df = df[df['type'] == 'Asset']
         contra_assets_df = df[df['type'] == 'Asset (Contra)']
@@ -59,9 +63,9 @@ class ReportGenerator:
         final_net_with = net_assets_with + surplus_with
         
         return {
-            'assets': pd.concat([assets_df[['name', 'balance']], contra_assets_df[['name', 'balance']]]).to_dict('records'),
+            'assets': pd.concat([assets_df[['name', 'balance']], contra_assets_df[['name', 'balance']]]).to_dict('records') if not assets_df.empty or not contra_assets_df.empty else [],
             'total_assets': total_assets,
-            'liabilities': liabilities_df[['name', 'balance']].to_dict('records'),
+            'liabilities': liabilities_df[['name', 'balance']].to_dict('records') if not liabilities_df.empty else [],
             'total_liabilities': total_liabilities,
             'net_assets_without': final_net_without,
             'net_assets_with': final_net_with,
@@ -73,18 +77,23 @@ class ReportGenerator:
 
     def get_comprehensive_income(self):
         df = self.db.get_trial_balance()
+        if 'balance' not in df.columns:
+            df['balance'] = 0.0
         df['balance'] = df['balance'].fillna(0.0)
-        def filter_cat(d, c): return d[d['category'].str.lower() == c]
+        
+        def filter_cat(d, c):
+            if d.empty: return pd.DataFrame(columns=d.columns)
+            return d[d['category'].str.lower() == c]
+            
         rev = df[df['type'] == 'Revenue']; exp = df[df['type'] == 'Expense']
         return {
             'revenue_without': filter_cat(rev, 'tanpa pembatasan').to_dict('records'),
             'revenue_with': filter_cat(rev, 'dengan pembatasan').to_dict('records'),
             'expenses': exp.to_dict('records'),
-            'total_revenue': rev['balance'].sum(),
-            'total_expenses': exp['balance'].sum(),
+            'total_revenue': rev['balance'].sum() if not rev.empty else 0,
+            'total_expenses': exp['balance'].sum() if not exp.empty else 0,
             'total_rev_without': filter_cat(rev, 'tanpa pembatasan')['balance'].sum(),
             'total_rev_with': filter_cat(rev, 'dengan pembatasan')['balance'].sum(),
-            # Tambahan detail beban per kategori
             'total_exp_without': filter_cat(exp, 'tanpa pembatasan')['balance'].sum(),
             'total_exp_with': filter_cat(exp, 'dengan pembatasan')['balance'].sum()
         }
