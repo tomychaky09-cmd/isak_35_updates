@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.db_type = config.get("db_type", "sqlite")
         self.mysql_config = config.get("mysql_config", {})
         self.sqlserver_config = config.get("sqlserver_config", {})
+        self.gemini_config = config.get("gemini_config", {"api_key": ""})
 
         self.db = DatabaseManager()
 
@@ -90,7 +91,6 @@ class MainWindow(QMainWindow):
         self.donor_view = DonorView(); self.content_area.addWidget(self.donor_view) # 7
         self.settings_view = SettingsView(); self.content_area.addWidget(self.settings_view) # 8
         
-        self.settings_view.set_current_settings(self.nav_position, self.current_theme, self.db_type, self.mysql_config, self.sqlserver_config)
         self.apply_navigation_layout(self.nav_position)
         self.apply_theme(self.current_theme)
         self.apply_sidebar_style()
@@ -107,9 +107,7 @@ class MainWindow(QMainWindow):
         self.btn_settings.clicked.connect(lambda: self.switch_view(8))
         self.btn_update.clicked.connect(self.check_for_updates)
         
-        self.settings_view.position_changed.connect(self.on_nav_position_changed)
-        self.settings_view.theme_changed.connect(self.on_theme_changed)
-        self.settings_view.db_config_changed.connect(self.on_db_config_changed)
+        self.settings_view.config_updated.connect(self.on_config_updated)
         
         self.journal_list_view.journal_selected.connect(self.open_journal_detail)
         self.journal_list_view.new_journal_requested.connect(self.open_new_journal_form)
@@ -118,31 +116,59 @@ class MainWindow(QMainWindow):
         self.cash_flow_view.back_to_dashboard_requested.connect(lambda: self.switch_view(0))
         self.journal_entry_view.back_requested.connect(self.show_journal_list)
         
-        self.setStatusBar(QStatusBar(self)); self.switch_view(0)
+        self.setStatusBar(QStatusBar(self))
+        
+        # Initial Load into Settings View
+        self.settings_view.set_current_settings(
+            self.nav_position, self.current_theme, self.db_type, 
+            self.mysql_config, self.sqlserver_config, self.gemini_config
+        )
+        self.switch_view(0)
 
     def load_config(self):
         if os.path.exists(self.CONFIG_FILE):
             try:
-                with open(self.CONFIG_FILE, 'r') as f: return json.load(f)
-            except: pass
-        return {"nav_position": "left", "theme": "standard", "db_type": "sqlite", "mysql_config": {}, "sqlserver_config": {}}
+                with open(self.CONFIG_FILE, 'r') as f:
+                    return json.load(f)
+            except:
+                pass
+        return {
+            "nav_position": "left", 
+            "theme": "standard", 
+            "db_type": "sqlite", 
+            "mysql_config": {}, 
+            "sqlserver_config": {},
+            "gemini_config": {"api_key": ""}
+        }
 
     def save_config(self):
-        config = {"nav_position": self.nav_position, "theme": self.current_theme, "db_type": self.db_type, "mysql_config": self.mysql_config, "sqlserver_config": self.sqlserver_config}
-        with open(self.CONFIG_FILE, 'w') as f: json.dump(config, f)
+        config = {
+            "nav_position": self.nav_position, 
+            "theme": self.current_theme, 
+            "db_type": self.db_type, 
+            "mysql_config": self.mysql_config, 
+            "sqlserver_config": self.sqlserver_config,
+            "gemini_config": self.gemini_config
+        }
+        with open(self.CONFIG_FILE, 'w') as f:
+            json.dump(config, f)
 
-    def on_nav_position_changed(self, position):
-        self.nav_position = position; self.save_config(); self.apply_navigation_layout(position); self.apply_sidebar_style()
-
-    def on_theme_changed(self, theme):
-        self.current_theme = theme; self.save_config(); self.apply_theme(theme); self.apply_sidebar_style()
-
-    def on_db_config_changed(self, db_config):
-        self.db_type = db_config["db_type"]
-        self.mysql_config = db_config["mysql_config"]
-        self.sqlserver_config = db_config.get("sqlserver_config", {})
+    def on_config_updated(self, config):
+        # Update internal state
+        self.nav_position = config["nav_position"]
+        self.current_theme = config["theme"]
+        self.db_type = config["db_type"]
+        self.mysql_config = config["mysql_config"]
+        self.sqlserver_config = config["sqlserver_config"]
+        self.gemini_config = config.get("gemini_config", {"api_key": ""})
+        
+        # Save and Apply
         self.save_config()
-        QMessageBox.warning(self, "Informasi", "Konfigurasi database disimpan. Harap restart aplikasi untuk menerapkan koneksi baru.")
+        self.apply_theme(self.current_theme)
+        self.apply_navigation_layout(self.nav_position)
+        self.apply_sidebar_style()
+        
+        QMessageBox.information(self, "Sukses", "Semua pengaturan berhasil disimpan. Beberapa perubahan mungkin memerlukan restart.")
 
     def apply_theme(self, theme):
         app = QApplication.instance()
