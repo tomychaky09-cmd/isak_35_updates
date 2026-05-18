@@ -1,5 +1,5 @@
 {
-    "version": "1.2.7",
-    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.7/ISAK35.exe",
-    "changelog": "Update v1.2.7: Perombakan halaman Pengaturan (lebih ramping & anti-potong), integrasi input API Key Gemini, dan perbaikan bug fatal (KeyError) saat menyimpan profil pengurus."
+    "version": "1.2.8",
+    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.8/ISAK35.exe",
+    "changelog": "Update v1.2.8: Perbaikan sistem auto-update (anti-korupsi file) dan validasi unduhan server. Memastikan file update terunduh sempurna sebelum dipasang."
 }

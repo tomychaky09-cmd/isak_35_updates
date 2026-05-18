@@ -6,7 +6,7 @@ import subprocess
 import shutil
 from PySide6.QtCore import QThread, Signal
 
-VERSION = "1.2.7"
+VERSION = "1.2.8"
 # Ganti 'main' dengan nama branch Anda (biasanya 'main' atau 'master')
 UPDATE_URL = "https://raw.githubusercontent.com/tomychaky09-cmd/isak_35_updates/master/version.json"
 
@@ -25,7 +25,9 @@ class UpdateChecker(QThread):
 
     def run(self):
         try:
-            response = requests.get(UPDATE_URL, timeout=10)
+            # Tambahkan header untuk menghindari caching
+            headers = {"Cache-Control": "no-cache"}
+            response = requests.get(UPDATE_URL, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 latest_version = data.get("version", "1.0.0")
@@ -54,12 +56,13 @@ class DownloadWorker(QThread):
 
     def run(self):
         try:
-            # Validasi ulang sebelum download (double check)
-            if self.target_version <= VERSION:
-                self.error.emit("Versi target tidak lebih baru dari versi saat ini.")
+            response = requests.get(self.download_url, stream=True, timeout=30)
+            
+            # CRITICAL: Cek status code agar tidak mendownload halaman 404
+            if response.status_code != 200:
+                self.error.emit(f"Gagal mengunduh: Server mengembalikan error {response.status_code}. Pastikan file EXE sudah diunggah ke GitHub dengan nama yang benar.")
                 return
 
-            response = requests.get(self.download_url, stream=True, timeout=30)
             total_size = int(response.headers.get('content-length', 0))
             
             # Gunakan folder AppData untuk penyimpanan sementara yang lebih aman
@@ -67,7 +70,7 @@ class DownloadWorker(QThread):
             if not os.path.exists(temp_dir):
                 os.makedirs(temp_dir)
             
-            save_path = os.path.join(temp_dir, f"isak35_{self.target_version}.exe")
+            save_path = os.path.join(temp_dir, f"ISAK35_Update_{self.target_version}.exe")
             
             downloaded_size = 0
             with open(save_path, 'wb') as f:
