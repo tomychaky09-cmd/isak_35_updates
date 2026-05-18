@@ -1,5 +1,5 @@
 {
-    "version": "1.2.8",
-    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.8/ISAK35.exe",
-    "changelog": "Update v1.2.8: Perbaikan sistem auto-update (anti-korupsi file) dan validasi unduhan server. Memastikan file update terunduh sempurna sebelum dipasang."
+    "version": "1.2.9",
+    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.9/ISAK35.exe",
+    "changelog": "Update v1.2.9: Rilis Sistem Sinkronisasi Hybrid! Sekarang Anda bisa mengunggah dan mengunduh data antara aplikasi Laptop dan versi Web di PythonAnywhere secara instan."
 }

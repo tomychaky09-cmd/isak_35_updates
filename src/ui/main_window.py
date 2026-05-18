@@ -51,6 +51,7 @@ class MainWindow(QMainWindow):
         self.mysql_config = config.get("mysql_config", {})
         self.sqlserver_config = config.get("sqlserver_config", {})
         self.gemini_config = config.get("gemini_config", {"api_key": ""})
+        self.sync_config = config.get("sync_config", {"url": "", "token": ""})
 
         self.db = DatabaseManager()
 
@@ -138,7 +139,8 @@ class MainWindow(QMainWindow):
             "db_type": "sqlite", 
             "mysql_config": {}, 
             "sqlserver_config": {},
-            "gemini_config": {"api_key": ""}
+            "gemini_config": {"api_key": ""},
+            "sync_config": {"url": "", "token": ""}
         }
 
     def save_config(self):
@@ -148,7 +150,8 @@ class MainWindow(QMainWindow):
             "db_type": self.db_type, 
             "mysql_config": self.mysql_config, 
             "sqlserver_config": self.sqlserver_config,
-            "gemini_config": self.gemini_config
+            "gemini_config": self.gemini_config,
+            "sync_config": self.sync_config
         }
         with open(self.CONFIG_FILE, 'w') as f:
             json.dump(config, f)
@@ -161,6 +164,7 @@ class MainWindow(QMainWindow):
         self.mysql_config = config["mysql_config"]
         self.sqlserver_config = config["sqlserver_config"]
         self.gemini_config = config.get("gemini_config", {"api_key": ""})
+        self.sync_config = config.get("sync_config", {"url": "", "token": ""})
         
         # Save and Apply
         self.save_config()

@@ -109,6 +109,43 @@ class SettingsView(QWidget):
         ai_layout.addLayout(ai_form)
         self.container_layout.addWidget(ai_box)
 
+        # --- Section: Sinkronisasi Cloud ---
+        sync_box = QFrame()
+        sync_box.setStyleSheet("background-color: #e3f2fd; border-radius: 8px; border: 1px solid #bbdefb;")
+        sync_layout = QVBoxLayout(sync_box)
+        lbl_sync = QLabel("☁️ SINKRONISASI CLOUD (HYBRID)")
+        lbl_sync.setStyleSheet("font-weight: bold; color: #1565c0; border: none;")
+        sync_layout.addWidget(lbl_sync)
+        
+        sync_form = QFormLayout()
+        self.sync_url = QLineEdit()
+        self.sync_url.setPlaceholderText("https://qudwahassunnah.pythonanywhere.com")
+        self.sync_url.setStyleSheet(input_style)
+        
+        self.sync_token = QLineEdit()
+        self.sync_token.setEchoMode(QLineEdit.Password)
+        self.sync_token.setPlaceholderText("Token Keamanan...")
+        self.sync_token.setStyleSheet(input_style)
+        
+        sync_form.addRow("URL Web App:", self.sync_url)
+        sync_form.addRow("Sync Token:", self.sync_token)
+        sync_layout.addLayout(sync_form)
+        
+        btn_sync_lay = QHBoxLayout()
+        self.btn_push = QPushButton("🚀 Unggah ke Cloud (Push)")
+        self.btn_pull = QPushButton("📥 Unduh dari Cloud (Pull)")
+        
+        self.btn_push.setStyleSheet("background-color: #0d47a1; color: white; padding: 8px; font-weight: bold; border-radius: 4px;")
+        self.btn_pull.setStyleSheet("background-color: #1976d2; color: white; padding: 8px; font-weight: bold; border-radius: 4px;")
+        
+        self.btn_push.clicked.connect(self.run_push_sync)
+        self.btn_pull.clicked.connect(self.run_pull_sync)
+        
+        btn_sync_lay.addWidget(self.btn_push)
+        btn_sync_lay.addWidget(self.btn_pull)
+        sync_layout.addLayout(btn_sync_lay)
+        self.container_layout.addWidget(sync_box)
+
         # --- Section: Database ---
         db_box = QFrame()
         db_box.setStyleSheet("background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;")
@@ -201,11 +238,65 @@ class SettingsView(QWidget):
                 if ok: QMessageBox.information(self, "Sukses", "Data berhasil dipulihkan. Silakan restart aplikasi.")
                 else: QMessageBox.critical(self, "Gagal", msg)
 
+    def run_push_sync(self):
+        import requests
+        url = self.sync_url.text().strip()
+        token = self.sync_token.text().strip()
+        
+        if not url or not token:
+            QMessageBox.warning(self, "Peringatan", "URL Web App dan Sync Token wajib diisi!")
+            return
+            
+        if QMessageBox.question(self, "Konfirmasi", "Data di Web akan DIGANTI dengan data lokal ini. Lanjut?", QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            try:
+                from src.database_manager import DatabaseManager
+                db = DatabaseManager()
+                data = db.generate_full_backup()
+                
+                endpoint = f"{url.rstrip('/')}/api/sync/push"
+                headers = {"Authorization": token, "Content-Type": "application/json"}
+                
+                response = requests.post(endpoint, json=data, headers=headers, timeout=30)
+                if response.status_code == 200:
+                    QMessageBox.information(self, "Sukses", "Data lokal berhasil diunggah ke Cloud.")
+                else:
+                    QMessageBox.critical(self, "Gagal", f"Error {response.status_code}: {response.text}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Terjadi kesalahan koneksi: {e}")
+
+    def run_pull_sync(self):
+        import requests
+        url = self.sync_url.text().strip()
+        token = self.sync_token.text().strip()
+        
+        if not url or not token:
+            QMessageBox.warning(self, "Peringatan", "URL Web App dan Sync Token wajib diisi!")
+            return
+            
+        if QMessageBox.warning(self, "Peringatan", "Data LOKAL akan DIHAPUS dan diganti data dari Cloud. Lanjut?", QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            try:
+                endpoint = f"{url.rstrip('/')}/api/sync/pull"
+                headers = {"Authorization": token}
+                
+                response = requests.get(endpoint, headers=headers, timeout=30)
+                if response.status_code == 200:
+                    sync_data = response.json()
+                    from src.database_manager import DatabaseManager
+                    db = DatabaseManager()
+                    ok, msg = db.restore_full_backup(sync_data)
+                    if ok:
+                        QMessageBox.information(self, "Sukses", "Data Cloud berhasil diunduh. Silakan restart aplikasi.")
+                    else:
+                        QMessageBox.critical(self, "Gagal", msg)
+                else:
+                    QMessageBox.critical(self, "Gagal", f"Error {response.status_code}: {response.text}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Terjadi kesalahan koneksi: {e}")
+
     def save_settings(self):
         from src.database_manager import DatabaseManager
         db = DatabaseManager()
         
-        # Bug Fix: Include all names
         profile_data = {
             "name": self.f_name.text(), "address": self.f_address.text(),
             "phone": self.f_phone.text(), "email": self.f_email.text(),
@@ -223,19 +314,20 @@ class SettingsView(QWidget):
         if db_text == "MySQL (Server)": db_type = "mysql"
         elif db_text == "SQL Server (Server)": db_type = "sqlserver"
 
-        # Emit all changes
+        # Emit all changes including sync config
         self.config_updated.emit({
             "nav_position": pos_map.get(self.combo_pos.currentText()),
             "theme": theme_map.get(self.combo_theme.currentText()),
             "db_type": db_type,
             "mysql_config": {"host": self.db_host.text(), "user": self.db_user.text(), "password": self.db_pass.text(), "database": self.db_name.text()},
             "sqlserver_config": {"host": self.ms_host.text(), "user": self.ms_user.text(), "password": self.ms_pass.text(), "database": self.ms_name.text(), "driver": self.ms_driver.currentText()},
-            "gemini_config": {"api_key": self.gemini_key.text()}
+            "gemini_config": {"api_key": self.gemini_key.text()},
+            "sync_config": {"url": self.sync_url.text(), "token": self.sync_token.text()}
         })
         
         QMessageBox.information(self, "Sukses", "Pengaturan telah disimpan.")
 
-    def set_current_settings(self, pos, theme, db_type="sqlite", mysql_config=None, sqlserver_config=None, gemini_config=None):
+    def set_current_settings(self, pos, theme, db_type="sqlite", mysql_config=None, sqlserver_config=None, gemini_config=None, sync_config=None):
         from src.database_manager import DatabaseManager
         db = DatabaseManager()
         
@@ -273,5 +365,9 @@ class SettingsView(QWidget):
 
         if gemini_config:
             self.gemini_key.setText(gemini_config.get("api_key", ""))
+            
+        if sync_config:
+            self.sync_url.setText(sync_config.get("url", ""))
+            self.sync_token.setText(sync_config.get("token", ""))
 
         self.toggle_db_inputs(self.combo_db_type.currentText())
