@@ -1,5 +1,5 @@
 {
-    "version": "1.2.9",
-    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.2.9/ISAK35.exe",
-    "changelog": "Update v1.2.9: Rilis Sistem Sinkronisasi Hybrid! Sekarang Anda bisa mengunggah dan mengunduh data antara aplikasi Laptop dan versi Web di PythonAnywhere secara instan."
+    "version": "1.3.0",
+    "url": "https://github.com/tomychaky09-cmd/isak_35_updates/releases/download/v1.3.0/ISAK35.exe",
+    "changelog": "Update v1.3.0: Perbaikan fitur Laporan Tahunan yang tidak responsif karena ketidakcocokan skema database (Missing Columns Migration)."
 }

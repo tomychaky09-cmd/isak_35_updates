@@ -236,7 +236,11 @@ class DatabaseManager:
                     vision TEXT,
                     mission TEXT,
                     program_summary TEXT,
-                    organizational_structure TEXT
+                    organizational_structure TEXT,
+                    program_detail_edu TEXT,
+                    program_detail_social TEXT,
+                    evaluation_constraints TEXT,
+                    future_plans TEXT
                 )
             """,
             "foundation_profile": f"""
@@ -313,6 +317,25 @@ class DatabaseManager:
 
                 if not exists:
                     cursor.execute(f"ALTER TABLE foundation_profile ADD COLUMN {col} VARCHAR(255)")
+                    conn.commit()
+            except: pass
+
+        # Tambahkan kolom baru ke annual_report_settings jika belum ada
+        for col in ['program_detail_edu', 'program_detail_social', 'evaluation_constraints', 'future_plans']:
+            try:
+                if self.db_type == "mysql":
+                    cursor.execute(f"SHOW COLUMNS FROM annual_report_settings LIKE '{col}'")
+                    exists = cursor.fetchone()
+                elif self.db_type == "sqlserver":
+                    cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'annual_report_settings' AND COLUMN_NAME = '{col}'")
+                    exists = cursor.fetchone()
+                else: # sqlite
+                    cursor.execute("PRAGMA table_info(annual_report_settings)")
+                    res = cursor.fetchall()
+                    exists = any(row[1] == col for row in res)
+
+                if not exists:
+                    cursor.execute(f"ALTER TABLE annual_report_settings ADD COLUMN {col} TEXT")
                     conn.commit()
             except: pass
 
