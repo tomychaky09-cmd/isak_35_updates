@@ -112,6 +112,13 @@ def add_journal():
         except Exception as e: flash(f'Error: {e}', 'danger')
     return render_template('journal_form.html', accounts=db.get_accounts(), cf_cats=db.get_cash_flow_categories())
 
+@app.route('/journals/edit/')
+@app.route('/journals/edit')
+@login_required
+def edit_journal_no_id():
+    flash('Pilih jurnal yang ingin diedit dari daftar.', 'info')
+    return redirect(url_for('journals_page'))
+
 @app.route('/journals/edit/<int:jid>', methods=['GET', 'POST'])
 @login_required
 def edit_journal(jid):

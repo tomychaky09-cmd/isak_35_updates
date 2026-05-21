@@ -1,1 +1,21 @@
-{"nav_position": "right", "theme": "standard", "db_type": "sqlite", "mysql_config": {"database": "foundation_finance", "host": "localhost", "password": "repsol27", "user": "root"}, "sqlserver_config": {"database": "foundation_finance", "driver": "ODBC Driver 17 for SQL Server", "host": "localhost", "password": "", "user": "sa"}, "gemini_config": {"api_key": "AIzaSyBfsI_GhzpGavRZtxTB1HkxbzP__TsIVz8"}}
+{
+  "nav_position": "right",
+  "theme": "standard",
+  "db_type": "mysql",
+  "mysql_config": {
+    "database": "qudwahassunnah$foundation_finance",
+    "host": "qudwahassunnah.mysql.pythonanywhere-services.com",
+    "password": "repsol27",
+    "user": "qudwahassunnah"
+  },
+  "sqlserver_config": {
+    "database": "foundation_finance",
+    "driver": "ODBC Driver 17 for SQL Server",
+    "host": "localhost",
+    "password": "",
+    "user": "sa"
+  },
+  "gemini_config": {
+    "api_key": "AIzaSyBfsI_GhzpGavRZtxTB1HkxbzP__TsIVz8"
+  }
+}
