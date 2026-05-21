@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Daftar Donatur</h1>
+    <a href="/donors/add" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Tambah Donatur</a>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 15px;">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nama Donatur</th>
+                        <th>Telepon/WA</th>
+                        <th>Tipe</th>
+                        <th>Alamat</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in donors %}
+                    <tr>
+                        <td><strong>{{ d[1] }}</strong><br><small class="text-muted">{{ d[5] or '' }}</small></td>
+                        <td>{{ d[2] or '-' }}</td>
+                        <td><span class="badge bg-secondary">{{ d[4] }}</span></td>
+                        <td>{{ d[3] or '-' }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="/donors/edit/{{ d[0] }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" 
+                                        onclick="if(confirm('Hapus donatur ini?')) window.location.href='/donors/delete/{{ d[0] }}'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

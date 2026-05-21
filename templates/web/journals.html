@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Daftar Jurnal Umum</h1>
+    <a href="/journals/add" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Tambah Jurnal</a>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 15px;">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>No. Referensi</th>
+                        <th>Keterangan</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for j in journals %}
+                    <tr>
+                        <td>{{ j[1] }}</td>
+                        <td><code>{{ j[3] or '-' }}</code></td>
+                        <td>{{ j[2] }}</td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <a href="/journals/{{ j[0] }}" class="btn btn-sm btn-outline-primary" title="Detail">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="/journals/edit/{{ j[0] }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" 
+                                        onclick="if(confirm('Hapus jurnal ini?')) window.location.href='/journals/delete/{{ j[0] }}'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

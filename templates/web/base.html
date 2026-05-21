@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ISAK 35 - Web App{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: #2c3e50; }
+        .sidebar { background-color: #34495e; min-height: 100vh; color: white; transition: all 0.3s; }
+        .sidebar a { color: #bdc3c7; text-decoration: none; padding: 10px 20px; display: block; }
+        .sidebar a:hover { background-color: #2c3e50; color: white; }
+        .sidebar a.active { background-color: #3498db; color: white; }
+        .card-stat { border-radius: 15px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .db-status { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; }
+        .badge-sqlite { background-color: #7f8c8d; }
+        .badge-mysql { background-color: #f39c12; }
+        
+        /* Mobile Adjustments */
+        @media (max-width: 767.98px) {
+            .sidebar { min-height: auto; }
+            .navbar-brand { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top shadow">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="fas fa-university me-2 text-info"></i>ISAK 35 WEB
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Menu untuk Mobile (Hanya muncul di layar kecil) -->
+            <ul class="navbar-nav d-lg-none mt-3 border-top pt-2">
+                <li class="nav-item"><a class="nav-link" href="/"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/coa"><i class="fas fa-list me-2"></i>Daftar Akun</a></li>
+                <li class="nav-item"><a class="nav-link" href="/journals"><i class="fas fa-book me-2"></i>Jurnal Umum</a></li>
+                <li class="nav-item"><a class="nav-link" href="/assets"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>
+                <li class="nav-item"><a class="nav-link" href="/donors"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Buku Besar & Neraca</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/reports/trial-balance">Neraca Saldo</a></li>
+                        <li><a class="dropdown-item" href="/ledger">Buku Besar</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Laporan Keuangan</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/reports/activities">Lap. Aktivitas</a></li>
+                        <li><a class="dropdown-item" href="/reports/position">Lap. Posisi Keuangan</a></li>
+                        <li><a class="dropdown-item" href="/reports/cash-flow">Lap. Arus Kas</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <!-- Menu User & DB Status (Kanan) -->
+            <ul class="navbar-nav ms-auto align-items-lg-center">
+                <li class="nav-item me-lg-3 my-2 my-lg-0">
+                    <span class="db-status badge {% if db_type == 'mysql' %}badge-mysql{% else %}badge-sqlite{% endif %}">
+                        <i class="fas fa-database me-1"></i>{{ db_type|upper }} Mode
+                    </span>
+                </li>
+                <li class="nav-item dropdown border-top border-lg-top-0 pt-2 pt-lg-0">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-1"></i> {{ session['user']['username'] if session['user'] else 'Admin' }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar (Hanya muncul di Desktop) -->
+        <nav class="col-md-3 col-lg-2 d-none d-md-block sidebar shadow-sm">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/coa' in request.path %}active{% endif %}" href="/coa">
+                            <i class="fas fa-list me-2"></i>Daftar Akun (COA)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <div class="d-flex align-items-center justify-content-between pe-2">
+                            <a class="nav-link flex-grow-1 {% if '/journals' in request.path %}active{% endif %}" href="/journals">
+                                <i class="fas fa-book me-2"></i>Jurnal Umum
+                            </a>
+                            <a href="/journals/add" class="text-white-50 p-1" title="Tambah Jurnal"><i class="fas fa-plus-circle"></i></a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/assets' in request.path %}active{% endif %}" href="/assets">
+                            <i class="fas fa-boxes me-2"></i>Inventaris Aset
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <div class="d-flex align-items-center justify-content-between pe-2">
+                            <a class="nav-link flex-grow-1 {% if '/donors' in request.path %}active{% endif %}" href="/donors">
+                                <i class="fas fa-hand-holding-heart me-2"></i>Donatur
+                            </a>
+                            <a href="/donors/add" class="text-white-50 p-1" title="Tambah Donatur"><i class="fas fa-plus-circle"></i></a>
+                        </div>
+                    </li>
+                    
+                    <hr class="mx-3 border-secondary opacity-25">
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="collapse" href="#ledgerMenu" role="button">
+                            <i class="fas fa-book-open me-2"></i>Buku Besar & Neraca <i class="fas fa-chevron-down ms-1 small"></i>
+                        </a>
+                        <div class="collapse {% if '/ledger' in request.path or '/reports/trial-balance' in request.path %}show{% endif %} ps-3" id="ledgerMenu">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link py-1 small" href="/reports/trial-balance">Neraca Saldo</a></li>
+                                <li><a class="nav-link py-1 small" href="/ledger">Buku Besar</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="collapse" href="#reportMenu" role="button">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Laporan Keuangan <i class="fas fa-chevron-down ms-1 small"></i>
+                        </a>
+                        <div class="collapse {% if '/reports/activities' in request.path or '/reports/position' in request.path or '/reports/cash-flow' in request.path %}show{% endif %} ps-3" id="reportMenu">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link py-1 small" href="/reports/activities">Lap. Aktivitas</a></li>
+                                <li><a class="nav-link py-1 small" href="/reports/position">Lap. Posisi Keuangan</a></li>
+                                <li><a class="nav-link py-1 small" href="/reports/cash-flow">Lap. Arus Kas</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+                <hr class="mx-3 border-secondary opacity-25">
+                <div class="px-3">
+                    <a href="/export/excel-all" class="btn btn-sm btn-info w-100 mb-3 text-white">
+                        <i class="fas fa-file-excel me-1"></i>Ekspor Semua
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

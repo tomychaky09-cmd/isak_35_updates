@@ -1,5 +1,4 @@
 import sqlite3
-import pandas as pd
 import os
 import sys
 import json
@@ -10,30 +9,19 @@ try:
 except ImportError:
     MYSQL_AVAILABLE = False
 
-try:
-    import pyodbc
-    SQLSERVER_AVAILABLE = True
-except ImportError:
-    SQLSERVER_AVAILABLE = False
-
 class DatabaseManager:
     CONFIG_FILE = "user_settings.json"
 
     def __init__(self, db_path='database/foundation_finance.db'):
-        # Load Config for Database Type
         self.config = self.load_config()
-        self.db_type = self.config.get("db_type", "sqlite") # sqlite, mysql, or sqlserver
+        self.db_type = self.config.get("db_type", "sqlite")
         self.mysql_config = self.config.get("mysql_config", {})
-        self.sqlserver_config = self.config.get("sqlserver_config", {})
 
         if hasattr(sys, '_MEIPASS'):
-            # Path EXE asli (folder tempat file .exe berada)
             base_dir = os.path.dirname(sys.executable)
         else:
-            # Path saat dalam mode development
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        # Jika db_path relatif, gabungkan dengan base_dir
         if not os.path.isabs(db_path):
             self.db_path = os.path.join(base_dir, db_path)
         else:
@@ -44,18 +32,13 @@ class DatabaseManager:
             if not os.path.exists(db_dir):
                 try: os.makedirs(db_dir)
                 except: self.db_path = os.path.basename(db_path)
-            print(f"[*] Menggunakan SQLite: {self.db_path}")
-        else:
-            print(f"[*] Menggunakan MySQL: {self.mysql_config.get('host')}")
-            
+        
         self._ensure_database_exists()
         self._update_schema()
 
     def _ensure_database_exists(self):
-        """Memastikan database target sudah ada di server (MySQL/SQL Server)."""
         if self.db_type == "mysql" and MYSQL_AVAILABLE:
             try:
-                # Koneksi ke server TANPA menentukan database
                 conn = mysql.connector.connect(
                     host=self.mysql_config.get("host"),
                     user=self.mysql_config.get("user"),
@@ -65,865 +48,224 @@ class DatabaseManager:
                 db_name = self.mysql_config.get("database")
                 if db_name:
                     cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
-                    print(f"[*] Database MySQL '{db_name}' dipastikan tersedia.")
                 conn.close()
-            except Exception as e:
-                print(f"[!] Peringatan: Gagal mengecek/membuat database MySQL: {e}")
-
-        elif self.db_type == "sqlserver" and SQLSERVER_AVAILABLE:
-            try:
-                driver = self.sqlserver_config.get("driver", "ODBC Driver 17 for SQL Server")
-                server = self.sqlserver_config.get("host")
-                uid = self.sqlserver_config.get("user")
-                pwd = self.sqlserver_config.get("password")
-                db_name = self.sqlserver_config.get("database")
-                
-                # Koneksi ke database 'master' untuk membuat database baru
-                conn_str = f'DRIVER={{{driver}}};SERVER={server};DATABASE=master;UID={uid};PWD={pwd}'
-                conn = pyodbc.connect(conn_str, autocommit=True)
-                cursor = conn.cursor()
-                
-                # Cek apakah database sudah ada
-                cursor.execute(f"SELECT name FROM sys.databases WHERE name = '{db_name}'")
-                if not cursor.fetchone():
-                    cursor.execute(f"CREATE DATABASE [{db_name}]")
-                    print(f"[*] Database SQL Server '{db_name}' berhasil dibuat.")
-                
-                conn.close()
-            except Exception as e:
-                print(f"[!] Peringatan: Gagal mengecek/membuat database SQL Server: {e}")
+            except: pass
 
     def load_config(self):
         if os.path.exists(self.CONFIG_FILE):
             try:
                 with open(self.CONFIG_FILE, 'r') as f:
                     return json.load(f)
-            except: pass
+            except: return {}
         return {}
 
     def get_connection(self):
-        if self.db_type == "mysql":
-            if MYSQL_AVAILABLE:
-                try:
-                    conn = mysql.connector.connect(
-                        host=self.mysql_config.get("host"),
-                        user=self.mysql_config.get("user"),
-                        password=self.mysql_config.get("password"),
-                        database=self.mysql_config.get("database")
-                    )
-                    return conn
-                except Exception as e:
-                    print(f"Gagal koneksi MySQL: {e}. Fallback ke SQLite.")
-            else:
-                print("Driver 'mysql-connector-python' tidak ditemukan. Fallback ke SQLite.")
-            
-            self.db_type = "sqlite" # Update status agar syntax ikut berubah
-            
-        elif self.db_type == "sqlserver":
-            if SQLSERVER_AVAILABLE:
-                try:
-                    driver = self.sqlserver_config.get("driver", "ODBC Driver 17 for SQL Server")
-                    server = self.sqlserver_config.get("host")
-                    database = self.sqlserver_config.get("database")
-                    uid = self.sqlserver_config.get("user")
-                    pwd = self.sqlserver_config.get("password")
-                    conn_str = f'DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}'
-                    return pyodbc.connect(conn_str)
-                except Exception as e:
-                    print(f"Gagal koneksi SQL Server: {e}. Fallback ke SQLite.")
-            else:
-                print("Driver 'pyodbc' tidak ditemukan. Fallback ke SQLite.")
-            
-            self.db_type = "sqlite"
-        
+        if self.db_type == "mysql" and MYSQL_AVAILABLE:
+            try:
+                return mysql.connector.connect(**self.mysql_config)
+            except:
+                return sqlite3.connect(self.db_path)
         return sqlite3.connect(self.db_path)
 
-    def _execute_query(self, query, params=(), fetch=False):
-        # MySQL uses %s as placeholder, SQLite and SQL Server use ?
+    def _execute_query(self, query, params=(), fetch=False, commit=False):
+        conn = self.get_connection()
         if self.db_type == "mysql":
             query = query.replace("?", "%s")
+            cursor = conn.cursor(buffered=True)
+        else:
+            cursor = conn.cursor()
         
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        cursor.execute(query, params)
-        result = None
-        if fetch:
-            result = cursor.fetchall()
-        conn.commit()
-        conn.close()
-        return result
+        try:
+            cursor.execute(query, params)
+            if commit: conn.commit()
+            if fetch: return cursor.fetchall()
+            return True
+        except Exception as e:
+            print(f"DB Error: {e}"); return None
+        finally: conn.close()
 
     def _update_schema(self):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        # Dialect differences: 
-        # SQLite: INTEGER PRIMARY KEY AUTOINCREMENT
-        # MySQL: INTEGER PRIMARY KEY AUTO_INCREMENT
-        # SQL Server: INTEGER PRIMARY KEY IDENTITY(1,1)
-        if self.db_type == "mysql":
-            pk_type = "INTEGER PRIMARY KEY AUTO_INCREMENT"
-            real_type = "DOUBLE"
-        elif self.db_type == "sqlserver":
-            pk_type = "INTEGER PRIMARY KEY IDENTITY(1,1)"
-            real_type = "FLOAT"
-        else: # sqlite
-            pk_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
-            real_type = "REAL"
-
-        tables = {
-            "accounts": f"""
-                CREATE TABLE IF NOT EXISTS accounts (
-                    id {pk_type},
-                    code VARCHAR(50) NOT NULL UNIQUE,
-                    name VARCHAR(255) NOT NULL,
-                    type VARCHAR(50) NOT NULL,
-                    category VARCHAR(100) NOT NULL,
-                    notes TEXT
-                )
-            """,
-            "journal_entries": f"""
-                CREATE TABLE IF NOT EXISTS journal_entries (
-                    id {pk_type},
-                    date VARCHAR(20) NOT NULL,
-                    description TEXT NOT NULL,
-                    reference_no VARCHAR(100)
-                )
-            """,
-            "journal_details": f"""
-                CREATE TABLE IF NOT EXISTS journal_details (
-                    id {pk_type},
-                    journal_id INTEGER NOT NULL,
-                    account_id INTEGER NOT NULL,
-                    debit {real_type} DEFAULT 0,
-                    credit {real_type} DEFAULT 0,
-                    cash_flow_activity TEXT
-                )
-            """,
-            "cash_flow_categories": f"""
-                CREATE TABLE IF NOT EXISTS cash_flow_categories (
-                    id {pk_type},
-                    name VARCHAR(255) NOT NULL UNIQUE,
-                    main_category VARCHAR(255) NOT NULL
-                )
-            """,
-            "assets_inventory": f"""
-                CREATE TABLE IF NOT EXISTS assets_inventory (
-                    id {pk_type},
-                    date VARCHAR(20) NOT NULL,
-                    code VARCHAR(50) NOT NULL UNIQUE,
-                    name VARCHAR(255) NOT NULL,
-                    location VARCHAR(255),
-                    estimated_value {real_type} DEFAULT 0,
-                    quantity INTEGER DEFAULT 1,
-                    description TEXT
-                )
-            """,
-            "donors": f"""
-                CREATE TABLE IF NOT EXISTS donors (
-                    id {pk_type},
-                    name VARCHAR(255) NOT NULL,
-                    phone VARCHAR(50),
-                    address TEXT,
-                    donor_type VARCHAR(50),
-                    description TEXT
-                )
-            """,
-            "annual_report_settings": f"""
-                CREATE TABLE IF NOT EXISTS annual_report_settings (
-                    id {pk_type},
-                    year INTEGER UNIQUE,
-                    vision TEXT,
-                    mission TEXT,
-                    program_summary TEXT,
-                    organizational_structure TEXT,
-                    program_detail_edu TEXT,
-                    program_detail_social TEXT,
-                    evaluation_constraints TEXT,
-                    future_plans TEXT
-                )
-            """,
-            "foundation_profile": f"""
-                CREATE TABLE IF NOT EXISTS foundation_profile (
-                    id INTEGER PRIMARY KEY CHECK (id = 1),
-                    name VARCHAR(255),
-                    address TEXT,
-                    phone VARCHAR(50),
-                    email VARCHAR(100),
-                    leader_name VARCHAR(255)
-                )
-            """,
-            "users": f"""
-                CREATE TABLE IF NOT EXISTS users (
-                    id {pk_type},
-                    username VARCHAR(50) NOT NULL UNIQUE,
-                    password VARCHAR(255) NOT NULL,
-                    role VARCHAR(20) DEFAULT 'admin'
-                )
-            """
-        }
-
-        for table_name, create_query in tables.items():
-            try:
-                cursor.execute(create_query)
-                conn.commit()
-            except Exception as e:
-                print(f"Error creating table {table_name}: {e}")
-
-        # Tambahkan user default jika belum ada
+        conn = self.get_connection(); cursor = conn.cursor()
         try:
-            cursor.execute("SELECT COUNT(*) FROM users")
+            pk = "INTEGER PRIMARY KEY AUTO_INCREMENT" if self.db_type == "mysql" else "INTEGER PRIMARY KEY AUTOINCREMENT"
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS accounts (id {pk}, code VARCHAR(50) UNIQUE, name VARCHAR(255), type VARCHAR(50), category VARCHAR(100), notes TEXT)")
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS journal_entries (id {pk}, date VARCHAR(20), description TEXT, reference_no VARCHAR(100) UNIQUE)")
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS journal_details (id {pk}, journal_id INTEGER, account_id INTEGER, debit DOUBLE DEFAULT 0, credit DOUBLE DEFAULT 0, cash_flow_activity TEXT)")
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS donors (id {pk}, name VARCHAR(255), phone VARCHAR(50), address TEXT, donor_type VARCHAR(50), description TEXT)")
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS assets_inventory (id {pk}, date VARCHAR(20), code VARCHAR(50) UNIQUE, name VARCHAR(255), location VARCHAR(255), estimated_value DOUBLE DEFAULT 0, quantity INTEGER DEFAULT 1, description TEXT)")
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS cash_flow_categories (id {pk}, name VARCHAR(255) UNIQUE, main_category VARCHAR(255))")
+            cursor.execute("CREATE TABLE IF NOT EXISTS foundation_profile (id INTEGER PRIMARY KEY CHECK (id = 1), name VARCHAR(255), address TEXT, leader_name VARCHAR(255), pembina_name VARCHAR(255), pengawas_name VARCHAR(255), logo_path TEXT, phone VARCHAR(50), email VARCHAR(100))")
+            cursor.execute("CREATE TABLE IF NOT EXISTS annual_report_settings (year INTEGER PRIMARY KEY, vision TEXT, mission TEXT, program_summary TEXT, program_detail_edu TEXT, program_detail_social TEXT, organizational_structure TEXT, evaluation_constraints TEXT, future_plans TEXT)")
+            
+            cursor.execute("SELECT COUNT(*) FROM foundation_profile")
             if cursor.fetchone()[0] == 0:
-                q_user = "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
-                cursor.execute(q_user, ("admin", "admin123", "admin"))
-                conn.commit()
-                print("[*] User default 'admin' dengan password 'admin123' berhasil dibuat.")
-        except Exception as e:
-            print(f"Error checking/creating default user: {e}")
-
-        # --- MIGRASI OTOMATIS: Tambah kolom 'notes' jika belum ada ---
-        try:
-            if self.db_type == "mysql":
-                cursor.execute(f"SHOW COLUMNS FROM accounts LIKE 'notes'")
-                exists = cursor.fetchone()
-            elif self.db_type == "sqlserver":
-                cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'accounts' AND COLUMN_NAME = 'notes'")
-                exists = cursor.fetchone()
-            else: # sqlite
-                cursor.execute("PRAGMA table_info(accounts)")
-                res = cursor.fetchall()
-                exists = any(row[1] == "notes" for row in res)
-
-            if not exists:
-                print(f"[MIGRATION] Menambahkan kolom 'notes' ke tabel accounts di {self.db_type}...")
-                cursor.execute("ALTER TABLE accounts ADD COLUMN notes TEXT")
-                conn.commit()
-        except Exception as e:
-            print(f"Migration Error (accounts.notes): {e}")
-
-        # Tambahkan kolom baru ke foundation_profile jika belum ada
-        for col in ['pembina_name', 'pengawas_name']:
-            try:
-                if self.db_type == "mysql":
-                    cursor.execute(f"SHOW COLUMNS FROM foundation_profile LIKE '{col}'")
-                    exists = cursor.fetchone()
-                elif self.db_type == "sqlserver":
-                    cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'foundation_profile' AND COLUMN_NAME = '{col}'")
-                    exists = cursor.fetchone()
-                else: # sqlite
-                    cursor.execute("PRAGMA table_info(foundation_profile)")
-                    res = cursor.fetchall()
-                    exists = any(row[1] == col for row in res)
-
-                if not exists:
-                    cursor.execute(f"ALTER TABLE foundation_profile ADD COLUMN {col} VARCHAR(255)")
-                    conn.commit()
-            except: pass
-
-        # Tambahkan kolom baru ke annual_report_settings jika belum ada
-        for col in ['program_detail_edu', 'program_detail_social', 'evaluation_constraints', 'future_plans']:
-            try:
-                if self.db_type == "mysql":
-                    cursor.execute(f"SHOW COLUMNS FROM annual_report_settings LIKE '{col}'")
-                    exists = cursor.fetchone()
-                elif self.db_type == "sqlserver":
-                    cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'annual_report_settings' AND COLUMN_NAME = '{col}'")
-                    exists = cursor.fetchone()
-                else: # sqlite
-                    cursor.execute("PRAGMA table_info(annual_report_settings)")
-                    res = cursor.fetchall()
-                    exists = any(row[1] == col for row in res)
-
-                if not exists:
-                    cursor.execute(f"ALTER TABLE annual_report_settings ADD COLUMN {col} TEXT")
-                    conn.commit()
-            except: pass
-
-        # Check if cash_flow_categories is empty to add defaults
-        cursor.execute("SELECT COUNT(*) FROM cash_flow_categories")
-        if cursor.fetchone()[0] == 0:
-            default_categories = [
-                ("Penerimaan dari Sumbangan/Donasi", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Penerimaan dari Jasa Layanan/Unit Bisnis", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Penerimaan Hibah Pemerintah", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Pembayaran Kas untuk Gaji dan Karyawan", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Pembayaran Kas untuk Beban Program", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Pembayaran Kas untuk Beban Administrasi", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Pembayaran Kas untuk Sewa Gedung", "ARUS KAS DARI AKTIVITAS OPERASI"),
-                ("Penjualan Aset Tetap (Kendaraan lama)", "ARUS KAS DARI AKTIVITAS INVESTASI"),
-                ("Pembelian Peralatan Kantor Baru", "ARUS KAS DARI AKTIVITAS INVESTASI"),
-                ("Perolehan Investasi Jangka Panjang", "ARUS KAS DARI AKTIVITAS INVESTASI"),
-                ("Penerimaan dari Pinjaman Bank", "ARUS KAS DARI AKTIVITAS PENDANAAN"),
-                ("Pembayaran Pokok Pinjaman", "ARUS KAS DARI AKTIVITAS PENDANAAN"),
-                ("Penerimaan Sumbangan yang Dibatasi untuk Bangunan", "ARUS KAS DARI AKTIVITAS PENDANAAN")
-            ]
-            q = "INSERT INTO cash_flow_categories (name, main_category) VALUES (%s, %s)" if self.db_type == "mysql" else "INSERT INTO cash_flow_categories (name, main_category) VALUES (?, ?)"
-            cursor.executemany(q, default_categories)
+                cursor.execute("INSERT INTO foundation_profile (id, name) VALUES (1, 'Yayasan ISAK 35')")
+            
+            cursor.execute("SELECT COUNT(*) FROM cash_flow_categories")
+            if cursor.fetchone()[0] == 0:
+                cats = [
+                    ('Penerimaan Donasi / Infaq', 'ARUS KAS DARI AKTIVITAS OPERASI'),
+                    ('Pembelian Aset Tetap', 'ARUS KAS DARI AKTIVITAS INVESTASI'),
+                    ('Penerimaan Pinjaman', 'ARUS KAS DARI AKTIVITAS PENDANAAN')
+                ]
+                q = "INSERT INTO cash_flow_categories (name, main_category) VALUES (%s, %s)" if self.db_type == "mysql" else "INSERT INTO cash_flow_categories (name, main_category) VALUES (?, ?)"
+                cursor.executemany(q, cats)
             conn.commit()
-
-        conn.close()
-
-    def verify_login(self, username, password):
-        """Memverifikasi kredensial pengguna."""
-        query = "SELECT id, username, role FROM users WHERE username = ? AND password = ?"
-        result = self._execute_query(query, (username, password), fetch=True)
-        if result:
-            return {"id": result[0][0], "username": result[0][1], "role": result[0][2]}
-        return None
-
-    def add_user(self, username, password, role='admin'):
-        """Menambah pengguna baru."""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            query = "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"
-            cursor.execute(query, (username, password, role))
-            conn.commit()
-            return True
-        except Exception as e:
-            print(f"Error adding user: {e}")
-            return False
-        finally:
-            conn.close()
+        except: pass
+        finally: conn.close()
 
     def get_accounts(self):
-        query = "SELECT id, code, name, type, category, notes FROM accounts ORDER BY code"
-        return self._execute_query(query, fetch=True)
+        return self._execute_query("SELECT id, code, name, type, category, notes FROM accounts ORDER BY code", fetch=True)
 
     def add_account(self, code, name, type, category, notes=""):
-        query = "INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)"
-        self._execute_query(query, (code, name, type, category, notes))
+        q = "INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)"
+        return self._execute_query(q, (code, name, type, category, notes), commit=True)
 
-    def update_account(self, account_id, code, name, type, category, notes=""):
-        query = "UPDATE accounts SET code = ?, name = ?, type = ?, category = ?, notes = ? WHERE id = ?"
-        self._execute_query(query, (code, name, type, category, notes, account_id))
+    def update_account(self, aid, code, name, type, category, notes=""):
+        q = "UPDATE accounts SET code=?, name=?, type=?, category=?, notes=? WHERE id=?"
+        return self._execute_query(q, (code, name, type, category, notes, aid), commit=True)
 
-    def delete_account(self, account_id):
-        query = "DELETE FROM accounts WHERE id = ?"
-        self._execute_query(query, (account_id,))
-
-    def bulk_add_accounts(self, accounts_data):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        success_count = 0; fail_count = 0; errors = []
-        try:
-            for account in accounts_data:
-                code = account.get('code'); name = account.get('name'); acc_type = account.get('type'); 
-                category = account.get('category', ""); notes = account.get('notes', "")
-                if not all([code, name, acc_type]): continue
-                
-                q_check = "SELECT id FROM accounts WHERE code = %s" if self.db_type == "mysql" else "SELECT id FROM accounts WHERE code = ?"
-                cursor.execute(q_check, (code,))
-                existing = cursor.fetchone()
-                if existing:
-                    q_up = "UPDATE accounts SET name = %s, type = %s, category = %s, notes = %s WHERE id = %s" if self.db_type == "mysql" else "UPDATE accounts SET name = ?, type = ?, category = ?, notes = ? WHERE id = ?"
-                    cursor.execute(q_up, (name, acc_type, category, notes, existing[0]))
-                else:
-                    q_in = "INSERT INTO accounts (code, name, type, category, notes) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)"
-                    cursor.execute(q_in, (code, name, acc_type, category, notes))
-                success_count += 1
-            conn.commit()
-        except Exception as e:
-            conn.rollback(); errors.append(str(e)); fail_count = len(accounts_data)
-        finally: conn.close()
-        return success_count, fail_count, errors
+    def delete_account(self, aid):
+        return self._execute_query("DELETE FROM accounts WHERE id=?", (aid,), commit=True)
 
     def add_journal_entry(self, date, description, ref_no, details):
-        conn = self.get_connection()
-        cursor = conn.cursor()
+        conn = self.get_connection(); cursor = conn.cursor()
         try:
-            q_in = "INSERT INTO journal_entries (date, description, reference_no) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_entries (date, description, reference_no) VALUES (?, ?, ?)"
-            cursor.execute(q_in, (date, description, ref_no))
-            journal_id = cursor.lastrowid
-            
-            q_det = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
-            for item in details:
-                cursor.execute(q_det, (journal_id, item['account_id'], item['debit'], item['credit'], item.get('cash_flow_activity')))
-            conn.commit()
-            return True
-        except Exception as e:
-            print(f"Error: {e}"); conn.rollback(); return False
-        finally: conn.close()
-
-    def add_beginning_balance_entry(self, date, year, details):
-        """Mencatat saldo awal sebagai entri jurnal khusus. Menghapus yang lama jika ada (berdasarkan ref_no)."""
-        ref_no = f"SA-{year}"
-        description = f"Saldo Awal Tahun {year}"
-        
-        # Cari apakah sudah ada entry dengan ref_no ini
-        q_check = "SELECT id FROM journal_entries WHERE reference_no = %s" if self.db_type == "mysql" else "SELECT id FROM journal_entries WHERE reference_no = ?"
-        res = self._execute_query(q_check, (ref_no,), fetch=True)
-        if res:
-            for row in res:
-                self.delete_journal_entry(row[0])
-        
-        return self.add_journal_entry(date, description, ref_no, details)
-
-    def bulk_add_journal_entries(self, entries_data):
-        """
-        Menambahkan banyak jurnal sekaligus.
-        entries_data: list of dict {'date', 'description', 'ref_no', 'details': list of details}
-        """
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        success_count = 0; fail_count = 0; errors = []
-        try:
-            for entry in entries_data:
-                try:
-                    q_in = "INSERT INTO journal_entries (date, description, reference_no) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_entries (date, description, reference_no) VALUES (?, ?, ?)"
-                    cursor.execute(q_in, (entry['date'], entry['description'], entry['ref_no']))
-                    journal_id = cursor.lastrowid
-                    
-                    q_det = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
-                    for item in entry['details']:
-                        cursor.execute(q_det, (journal_id, item['account_id'], item['debit'], item['credit'], item.get('cash_flow_activity')))
-                    success_count += 1
-                except Exception as e:
-                    errors.append(f"Gagal entri {entry.get('ref_no')}: {e}")
-                    fail_count += 1
-            conn.commit()
-        except Exception as e:
-            conn.rollback(); errors.append(str(e))
-        finally: conn.close()
-        return success_count, fail_count, errors
-
-    def update_journal_entry(self, journal_id, date, description, ref_no, details):
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            q_up = "UPDATE journal_entries SET date = %s, description = %s, reference_no = %s WHERE id = %s" if self.db_type == "mysql" else "UPDATE journal_entries SET date = ?, description = ?, reference_no = ? WHERE id = ?"
-            cursor.execute(q_up, (date, description, ref_no, journal_id))
-            q_del = "DELETE FROM journal_details WHERE journal_id = %s" if self.db_type == "mysql" else "DELETE FROM journal_details WHERE journal_id = ?"
-            cursor.execute(q_del, (journal_id,))
-            q_det = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
-            for item in details:
-                cursor.execute(q_det, (journal_id, item['account_id'], item['debit'], item['credit'], item.get('cash_flow_activity')))
+            q1 = "INSERT INTO journal_entries (date, description, reference_no) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_entries (date, description, reference_no) VALUES (?, ?, ?)"
+            cursor.execute(q1, (date, description, ref_no))
+            jid = cursor.lastrowid
+            q2 = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
+            for d in details:
+                cursor.execute(q2, (jid, d['account_id'], d['debit'], d['credit'], d.get('cash_flow_activity')))
             conn.commit(); return True
-        except Exception as e:
-            print(f"Error: {e}"); conn.rollback(); return False
+        except: conn.rollback(); return False
         finally: conn.close()
 
     def get_journal_summaries(self):
-        query = "SELECT id, date, description, reference_no FROM journal_entries ORDER BY date DESC, id DESC"
-        return self._execute_query(query, fetch=True)
+        r = self._execute_query("SELECT id, date, description, reference_no FROM journal_entries ORDER BY date DESC, id DESC", fetch=True)
+        return [{'id': x[0], 'date': x[1], 'description': x[2], 'reference_no': x[3]} for x in r] if r else []
 
-    def get_journal_details(self, journal_id):
-        header_query = "SELECT date, description, reference_no FROM journal_entries WHERE id = ?"
-        header_result = self._execute_query(header_query, (journal_id,), fetch=True)
-        if not header_result: return None
-        details_query = """
-        SELECT a.code, a.name, jd.debit, jd.credit, jd.cash_flow_activity
-        FROM journal_details jd
-        JOIN accounts a ON jd.account_id = a.id
-        WHERE jd.journal_id = ?
-        ORDER BY jd.id ASC
-        """
-        details_result = self._execute_query(details_query, (journal_id,), fetch=True)
-        return {'header': header_result[0], 'details': details_result}
+    def get_journal_details(self, jid):
+        h = self._execute_query("SELECT date, description, reference_no FROM journal_entries WHERE id=?", (jid,), fetch=True)
+        if not h: return None
+        d = self._execute_query("SELECT a.code, a.name, jd.debit, jd.credit, jd.cash_flow_activity, a.id FROM journal_details jd JOIN accounts a ON jd.account_id=a.id WHERE jd.journal_id=? ORDER BY jd.id", (jid,), fetch=True)
+        return {'header': {'date': h[0][0], 'description': h[0][1], 'reference_no': h[0][2]}, 'details': [{'code': x[0], 'name': x[1], 'debit': x[2], 'credit': x[3], 'cash_flow_activity': x[4], 'account_id': x[5]} for x in d]}
 
-    def delete_journal_entry(self, journal_id):
+    def delete_journal_entry(self, jid):
         conn = self.get_connection(); cursor = conn.cursor()
         try:
-            q1 = "DELETE FROM journal_details WHERE journal_id = %s" if self.db_type == "mysql" else "DELETE FROM journal_details WHERE journal_id = ?"
-            cursor.execute(q1, (journal_id,))
-            q2 = "DELETE FROM journal_entries WHERE id = %s" if self.db_type == "mysql" else "DELETE FROM journal_entries WHERE id = ?"
-            cursor.execute(q2, (journal_id,))
+            q_del_d = "DELETE FROM journal_details WHERE journal_id = %s" if self.db_type == "mysql" else "DELETE FROM journal_details WHERE journal_id = ?"
+            q_del_h = "DELETE FROM journal_entries WHERE id = %s" if self.db_type == "mysql" else "DELETE FROM journal_entries WHERE id = ?"
+            cursor.execute(q_del_d, (jid,))
+            cursor.execute(q_del_h, (jid,))
             conn.commit(); return True
         except: conn.rollback(); return False
         finally: conn.close()
 
     def get_trial_balance(self):
         query = """
-        SELECT a.id, a.code, a.name, a.type, a.category,
-               SUM(jd.debit) as total_debit, SUM(jd.credit) as total_credit
-        FROM accounts a
-        LEFT JOIN journal_details jd ON a.id = jd.account_id
-        GROUP BY a.id, a.code, a.name, a.type, a.category
-        ORDER BY a.code
+        SELECT a.id, a.code, a.name, a.type, a.category, SUM(COALESCE(jd.debit, 0)), SUM(COALESCE(jd.credit, 0))
+        FROM accounts a LEFT JOIN journal_details jd ON a.id = jd.account_id
+        GROUP BY a.id, a.code, a.name, a.type, a.category ORDER BY a.code
         """
-        conn = self.get_connection()
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        
-        # Pastikan kolom ada dan numerik
-        df['total_debit'] = pd.to_numeric(df['total_debit'].fillna(0), errors='coerce').fillna(0)
-        df['total_credit'] = pd.to_numeric(df['total_credit'].fillna(0), errors='coerce').fillna(0)
-        
-        # Inisialisasi kolom hasil
-        df['debit'] = 0.0
-        df['credit'] = 0.0
-        df['balance'] = 0.0
-        
-        for index, row in df.iterrows():
-            acc_type = row['type']
-            td = row['total_debit']
-            tc = row['total_credit']
-            
-            if acc_type in ['Asset', 'Expense']:
-                # Saldo normal Debet
-                bal = td - tc
-                df.at[index, 'balance'] = bal
-                if bal >= 0:
-                    df.at[index, 'debit'] = bal
-                else:
-                    df.at[index, 'credit'] = abs(bal)
+        r = self._execute_query(query, fetch=True)
+        res = []
+        for x in r:
+            aid, code, name, t, cat, td, tc = x
+            td = td or 0.0; tc = tc or 0.0
+            item = {'id': aid, 'code': code, 'name': name, 'type': t, 'category': cat, 'total_debit': td, 'total_credit': tc, 'debit': 0.0, 'credit': 0.0, 'balance': 0.0}
+            if t in ['Asset', 'Expense']:
+                bal = td - tc; item['balance'] = bal
+                if bal >= 0: item['debit'] = bal
+                else: item['credit'] = abs(bal)
             else:
-                # Saldo normal Kredit (Liability, Asset Net, Revenue)
-                bal = tc - td
-                df.at[index, 'balance'] = bal
-                if bal >= 0:
-                    df.at[index, 'credit'] = bal
-                else:
-                    df.at[index, 'debit'] = abs(bal)
-        return df
+                bal = tc - td; item['balance'] = bal
+                if bal >= 0: item['credit'] = bal
+                else: item['debit'] = abs(bal)
+            res.append(item)
+        return res
 
-    def get_ledger_entries(self, account_id):
-        query = """
-        SELECT je.date, je.description, je.reference_no, jd.debit, jd.credit
-        FROM journal_details jd
-        JOIN journal_entries je ON jd.journal_id = je.id
-        WHERE jd.account_id = ?
-        ORDER BY je.date ASC, je.id ASC
-        """
-        if self.db_type == "mysql": query = query.replace("?", "%s")
-        conn = self.get_connection()
-        df = pd.read_sql_query(query, conn, params=(account_id,))
-        conn.close(); return df
+    def get_ledger_entries(self, aid):
+        r = self._execute_query("SELECT je.date, je.description, je.reference_no, jd.debit, jd.credit FROM journal_details jd JOIN journal_entries je ON jd.journal_id=je.id WHERE jd.account_id=? ORDER BY je.date, je.id", (aid,), fetch=True)
+        return [{'date': x[0], 'description': x[1], 'reference_no': x[2], 'debit': x[3], 'credit': x[4]} for x in r] if r else []
 
-    def get_cash_flow_categories(self):
-        query = "SELECT id, name, main_category FROM cash_flow_categories ORDER BY name"
-        return self._execute_query(query, fetch=True)
-
-    def get_cash_flow_activity_mapping(self):
-        categories = self.get_cash_flow_categories()
-        return {name: main_cat for _, name, main_cat in categories}
-
-    def get_account_id_by_code(self, account_code):
-        query = "SELECT id FROM accounts WHERE code = ?"
-        result = self._execute_query(query, (account_code,), fetch=True)
-        return result[0][0] if result else None
-
-    def get_cash_and_cash_equivalents_account_ids(self):
-        query = "SELECT id FROM accounts WHERE name LIKE '%Kas%' OR name LIKE '%Bank%'"
-        result = self._execute_query(query, fetch=True)
-        return [row[0] for row in result] if result else []
-
-    def get_cash_account_id(self):
-        query = "SELECT id FROM accounts WHERE name = 'Kas' OR name = 'Cash' OR name = 'Kas dan Setara Kas' LIMIT 1"
-        result = self._execute_query(query, fetch=True)
-        return result[0][0] if result else None
-
-    def get_all_journal_details_with_cash_flow(self):
-        query = """
-        SELECT je.id, je.date, je.description, a.name, jd.debit, jd.credit, jd.cash_flow_activity
-        FROM journal_details jd
-        JOIN journal_entries je ON jd.journal_id = je.id
-        JOIN accounts a ON jd.account_id = a.id
-        ORDER BY je.date ASC, je.id ASC
-        """
-        return self._execute_query(query, fetch=True)
-
-    def get_journal_details_for_account(self, account_id):
-        query = """
-        SELECT je.date, je.description, je.reference_no, jd.debit, jd.credit
-        FROM journal_details jd
-        JOIN journal_entries je ON jd.journal_id = je.id
-        WHERE jd.account_id = ?
-        ORDER BY je.date ASC, je.id ASC
-        """
-        return self._execute_query(query, (account_id,), fetch=True)
-
-    def add_cash_flow_category(self, name, main_category):
-        query = "INSERT INTO cash_flow_categories (name, main_category) VALUES (?, ?)"
-        self._execute_query(query, (name, main_category))
-
-    def update_cash_flow_category(self, category_id, name, main_category):
-        query = "UPDATE cash_flow_categories SET name = ?, main_category = ? WHERE id = ?"
-        self._execute_query(query, (name, main_category, category_id))
-
-    def delete_cash_flow_category(self, category_id):
-        query = "DELETE FROM cash_flow_categories WHERE id = ?"
-        self._execute_query(query, (category_id,))
-
-    # --- Assets Inventory ---
-    def get_assets_inventory(self):
-        query = "SELECT id, date, code, name, location, estimated_value, quantity, description FROM assets_inventory ORDER BY date DESC"
-        return self._execute_query(query, fetch=True)
-
-    def add_asset_inventory(self, date, code, name, location, value, qty, desc):
-        query = "INSERT INTO assets_inventory (date, code, name, location, estimated_value, quantity, description) VALUES (?, ?, ?, ?, ?, ?, ?)"
-        self._execute_query(query, (date, code, name, location, value, qty, desc))
-
-    def update_asset_inventory(self, asset_id, date, code, name, location, value, qty, desc):
-        query = "UPDATE assets_inventory SET date = ?, code = ?, name = ?, location = ?, estimated_value = ?, quantity = ?, description = ? WHERE id = ?"
-        self._execute_query(query, (date, code, name, location, value, qty, desc, asset_id))
-
-    def delete_asset_inventory(self, asset_id):
-        query = "DELETE FROM assets_inventory WHERE id = ?"
-        self._execute_query(query, (asset_id,))
-
-    def bulk_add_assets(self, assets_data):
-        conn = self.get_connection(); cursor = conn.cursor()
-        try:
-            for item in assets_data:
-                q = "INSERT INTO assets_inventory (date, code, name, location, estimated_value, quantity, description) VALUES (?, ?, ?, ?, ?, ?, ?)"
-                if self.db_type == "mysql": q = q.replace("?", "%s")
-                cursor.execute(q, (item['date'], item['code'], item['name'], item['location'], item['estimated_value'], item['quantity'], item.get('description', "")))
-            conn.commit(); return True
-        except: conn.rollback(); return False
-        finally: conn.close()
-
-    # --- Donors ---
     def get_donors(self):
-        query = "SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name"
-        return self._execute_query(query, fetch=True)
+        return self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name", fetch=True)
 
-    def add_donor(self, name, phone, address, donor_type, desc):
-        query = "INSERT INTO donors (name, phone, address, donor_type, description) VALUES (?, ?, ?, ?, ?)"
-        self._execute_query(query, (name, phone, address, donor_type, desc))
+    def add_donor(self, name, phone, address, t, desc):
+        return self._execute_query("INSERT INTO donors (name, phone, address, donor_type, description) VALUES (?, ?, ?, ?, ?)", (name, phone, address, t, desc), commit=True)
 
-    def update_donor(self, donor_id, name, phone, address, donor_type, desc):
-        query = "UPDATE donors SET name = ?, phone = ?, address = ?, donor_type = ?, description = ? WHERE id = ?"
-        self._execute_query(query, (name, phone, address, donor_type, desc, donor_id))
+    def update_donor(self, did, name, phone, address, t, desc):
+        return self._execute_query("UPDATE donors SET name=?, phone=?, address=?, donor_type=?, description=? WHERE id=?", (name, phone, address, t, desc, did), commit=True)
 
-    def delete_donor(self, donor_id):
-        query = "DELETE FROM donors WHERE id = ?"
-        self._execute_query(query, (donor_id,))
+    def delete_donor(self, did):
+        return self._execute_query("DELETE FROM donors WHERE id=?", (did,), commit=True)
 
-    def get_all_data_table_names(self):
-        return ['journal_details', 'journal_entries', 'accounts', 'cash_flow_categories', 'assets_inventory', 'donors']
+    def get_assets_inventory(self):
+        return self._execute_query("SELECT id, date, code, name, location, estimated_value, quantity, description FROM assets_inventory ORDER BY date DESC", fetch=True)
 
-    def clear_table_data(self, table_name):
-        query = f"DELETE FROM {table_name}"
-        self._execute_query(query)
+    def add_asset_inventory(self, date, code, name, loc, val, qty, desc):
+        return self._execute_query("INSERT INTO assets_inventory (date, code, name, location, estimated_value, quantity, description) VALUES (?, ?, ?, ?, ?, ?, ?)", (date, code, name, loc, val, qty, desc), commit=True)
 
-    def clear_all_data(self):
-        for t in self.get_all_data_table_names(): self.clear_table_data(t)
+    def update_asset_inventory(self, aid, date, code, name, loc, val, qty, desc):
+        return self._execute_query("UPDATE assets_inventory SET date=?, code=?, name=?, location=?, estimated_value=?, quantity=?, description=? WHERE id=?", (date, code, name, loc, val, qty, desc, aid), commit=True)
 
-    def get_account_balance_at_date(self, account_id, end_date):
-        conn = self.get_connection(); cursor = conn.cursor()
-        q_type = "SELECT type FROM accounts WHERE id = %s" if self.db_type == "mysql" else "SELECT type FROM accounts WHERE id = ?"
-        cursor.execute(q_type, (account_id,))
-        res = cursor.fetchone()
-        if not res: conn.close(); return 0.0
-        acc_type = res[0]
-        q_bal = """
-        SELECT SUM(jd.debit) as td, SUM(jd.credit) as tc
-        FROM journal_details jd
-        JOIN journal_entries je ON jd.journal_id = je.id
-        WHERE jd.account_id = %s AND je.date <= %s
-        """ if self.db_type == "mysql" else """
-        SELECT SUM(jd.debit) as td, SUM(jd.credit) as tc
-        FROM journal_details jd
-        JOIN journal_entries je ON jd.journal_id = je.id
-        WHERE jd.account_id = ? AND je.date <= ?
-        """
-        cursor.execute(q_bal, (account_id, end_date))
-        r = cursor.fetchone()
-        conn.close()
-        td = r[0] if r[0] else 0.0; tc = r[1] if r[1] else 0.0
-        return (td - tc) if acc_type in ['Asset', 'Expense'] else (tc - td)
-
-    def get_account_by_name_or_create(self, name, code, type, category):
-        conn = self.get_connection(); cursor = conn.cursor()
-        q_sel = "SELECT id FROM accounts WHERE name = %s" if self.db_type == "mysql" else "SELECT id FROM accounts WHERE name = ?"
-        cursor.execute(q_sel, (name,))
-        res = cursor.fetchone()
-        if res: conn.close(); return res[0]
-        q_in = "INSERT INTO accounts (code, name, type, category) VALUES (%s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO accounts (code, name, type, category) VALUES (?, ?, ?, ?)"
-        cursor.execute(q_in, (code, name, type, category))
-        aid = cursor.lastrowid; conn.commit(); conn.close(); return aid
-
-    def create_closing_entries(self, date, year):
-        try:
-            ism_id = self.get_account_by_name_or_create("Ikhtisar Laba Rugi", "3999", "Asset Net", "Ekuitas")
-            conn = self.get_connection(); cursor = conn.cursor()
-            q_eq = "SELECT id FROM accounts WHERE name LIKE '%Modal%' OR name LIKE '%Ekuitas%' LIMIT 1"
-            cursor.execute(q_eq); eq_res = cursor.fetchone()
-            if not eq_res: return False
-            eq_id = eq_res[0]
-            cursor.execute("SELECT id, name, type FROM accounts WHERE type IN ('Revenue', 'Expense')")
-            accs = cursor.fetchall()
-            details = []; total_ism = 0.0
-            for aid, aname, atype in accs:
-                bal = self.get_account_balance_at_date(aid, date)
-                if bal != 0:
-                    if atype == 'Revenue':
-                        details.append({'account_id': aid, 'debit': bal, 'credit': 0.0})
-                        details.append({'account_id': ism_id, 'debit': 0.0, 'credit': bal})
-                        total_ism += bal
-                    else:
-                        details.append({'account_id': aid, 'debit': 0.0, 'credit': bal})
-                        details.append({'account_id': ism_id, 'debit': bal, 'credit': 0.0})
-                        total_ism -= bal
-            if details: self.add_journal_entry(date, f"Penutup IE {year}", f"JP-IE-{year}", details)
-            ism_bal = self.get_account_balance_at_date(ism_id, date)
-            if ism_bal != 0:
-                re_dets = []
-                if ism_bal > 0:
-                    re_dets.append({'account_id': ism_id, 'debit': ism_bal, 'credit': 0.0})
-                    re_dets.append({'account_id': eq_id, 'debit': 0.0, 'credit': ism_bal})
-                else:
-                    re_dets.append({'account_id': eq_id, 'debit': abs(ism_bal), 'credit': 0.0})
-                    re_dets.append({'account_id': ism_id, 'debit': 0.0, 'credit': abs(ism_bal)})
-                self.add_journal_entry(date, f"Penutup ISM {year}", f"JP-IS-{year}", re_dets)
-            return True
-        except: return False
-
-    def get_journal_data_for_export(self):
-        query = '''
-            SELECT 
-                j.date as 'Tanggal',
-                j.reference_no as 'Referensi',
-                j.description as 'Keterangan',
-                a.code as 'Kode Akun',
-                a.name as 'Nama Akun',
-                d.debit as 'Debit',
-                d.credit as 'Kredit',
-                cfc.main_category as 'Kategori Arus Kas',
-                d.cash_flow_activity as 'Aktivitas Arus Kas',
-                '' as 'Catatan'
-            FROM journal_entries j
-            JOIN journal_details d ON j.id = d.journal_id
-            JOIN accounts a ON d.account_id = a.id
-            LEFT JOIN cash_flow_categories cfc ON d.cash_flow_activity = cfc.name
-            ORDER BY j.date DESC, j.id DESC, a.code ASC
-        '''
-        conn = self.get_connection()
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return df
-
-    def generate_full_backup(self):
-        """Mengambil seluruh data dari semua tabel untuk dipindahkan/cadangkan."""
-        backup_data = {}
-        tables = self.get_all_data_table_names()
-        conn = self.get_connection()
-        try:
-            for table in tables:
-                df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
-                # Ubah NaN (Not a Number) menjadi None agar bisa terbaca sebagai NULL di SQL
-                df_clean = df.where(pd.notnull(df), None)
-                backup_data[table] = df_clean.to_dict('records')
-            return backup_data
-        except Exception as e:
-            print(f"Backup Error: {e}")
-            return None
-        finally:
-            conn.close()
-
-    def restore_full_backup(self, backup_data):
-        """Memasukkan seluruh data dari backup ke database aktif."""
-        if not backup_data: return False, "Data backup kosong."
-        
-        import math
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        try:
-            # 1. Hapus data lama di semua tabel
-            delete_order = ['journal_details', 'journal_entries', 'accounts', 'cash_flow_categories', 'assets_inventory', 'donors']
-            for table in delete_order:
-                if table in self.get_all_data_table_names():
-                    cursor.execute(f"DELETE FROM {table}")
-            
-            # 2. Masukkan data baru per tabel
-            insert_order = ['accounts', 'cash_flow_categories', 'assets_inventory', 'donors', 'journal_entries', 'journal_details']
-            
-            for table in insert_order:
-                if table not in backup_data: continue
-                rows = backup_data[table]
-                if not rows: continue
-                
-                columns = rows[0].keys()
-                # Buat query insert dinamis
-                cols_str = ", ".join([f"`{c}`" if self.db_type == "mysql" else f"[{c}]" if self.db_type == "sqlserver" else c for c in columns])
-                placeholders = ", ".join(["%s" if self.db_type == "mysql" else "?" for _ in columns])
-                query = f"INSERT INTO {table} ({cols_str}) VALUES ({placeholders})"
-                
-                for row in rows:
-                    # BERSIHKAN DATA: Ubah float NaN menjadi None (NULL)
-                    clean_values = []
-                    for val in row.values():
-                        if isinstance(val, float) and math.isnan(val):
-                            clean_values.append(None)
-                        else:
-                            clean_values.append(val)
-                    
-                    cursor.execute(query, tuple(clean_values))
-            
-            conn.commit()
-            return True, "Berhasil memulihkan seluruh data."
-        except Exception as e:
-            conn.rollback()
-            return False, f"Restore Error: {str(e)}"
-        finally:
-            conn.close()
-
-    def get_annual_report_settings(self, year):
-        query = "SELECT vision, mission, program_summary, organizational_structure, program_detail_edu, program_detail_social, evaluation_constraints, future_plans FROM annual_report_settings WHERE year = ?"
-        result = self._execute_query(query, (year,), fetch=True)
-        if result:
-            return {
-                'vision': result[0][0],
-                'mission': result[0][1],
-                'program_summary': result[0][2],
-                'organizational_structure': result[0][3],
-                'program_detail_edu': result[0][4],
-                'program_detail_social': result[0][5],
-                'evaluation_constraints': result[0][6],
-                'future_plans': result[0][7]
-            }
-        return {
-            'vision': '', 'mission': '', 'program_summary': '', 
-            'organizational_structure': '', 'program_detail_edu': '', 
-            'program_detail_social': '', 'evaluation_constraints': '', 
-            'future_plans': ''
-        }
-
-    def save_annual_report_settings(self, year, data):
-        check_query = "SELECT id FROM annual_report_settings WHERE year = ?"
-        exists = self._execute_query(check_query, (year,), fetch=True)
-        
-        if exists:
-            query = """UPDATE annual_report_settings SET 
-                       vision = ?, mission = ?, program_summary = ?, organizational_structure = ?,
-                       program_detail_edu = ?, program_detail_social = ?, 
-                       evaluation_constraints = ?, future_plans = ? 
-                       WHERE year = ?"""
-            self._execute_query(query, (
-                data['vision'], data['mission'], data['program_summary'], data['organizational_structure'],
-                data['program_detail_edu'], data['program_detail_social'],
-                data['evaluation_constraints'], data['future_plans'], year
-            ))
-        else:
-            query = """INSERT INTO annual_report_settings 
-                       (year, vision, mission, program_summary, organizational_structure,
-                        program_detail_edu, program_detail_social, evaluation_constraints, future_plans) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-            self._execute_query(query, (
-                year, data['vision'], data['mission'], data['program_summary'], data['organizational_structure'],
-                data['program_detail_edu'], data['program_detail_social'],
-                data['evaluation_constraints'], data['future_plans']
-            ))
+    def delete_asset_inventory(self, aid):
+        return self._execute_query("DELETE FROM assets_inventory WHERE id=?", (aid,), commit=True)
 
     def get_foundation_profile(self):
-        query = "SELECT name, address, phone, email, leader_name, pembina_name, pengawas_name FROM foundation_profile WHERE id = 1"
-        result = self._execute_query(query, fetch=True)
-        if result:
-            return {
-                'name': result[0][0], 'address': result[0][1], 'phone': result[0][2],
-                'email': result[0][3], 'leader_name': result[0][4],
-                'pembina_name': result[0][5] or '-', 'pengawas_name': result[0][6] or '-'
-            }
-        return {'name': 'Nama Yayasan', 'address': '-', 'phone': '-', 'email': '-', 'leader_name': '-', 'pembina_name': '-', 'pengawas_name': '-'}
+        r = self._execute_query("SELECT name, address, leader_name, pembina_name, pengawas_name, logo_path, phone, email FROM foundation_profile WHERE id=1", fetch=True)
+        if r: return {'name': r[0][0], 'address': r[0][1], 'leader_name': r[0][2], 'pembina_name': r[0][3], 'pengawas_name': r[0][4], 'logo_path': r[0][5], 'phone': r[0][6], 'email': r[0][7]}
+        return {'name': 'Yayasan ISAK 35'}
 
-    def save_foundation_profile(self, data):
-        check_query = "SELECT id FROM foundation_profile WHERE id = 1"
-        exists = self._execute_query(check_query, fetch=True)
-        if exists:
-            up_query = "UPDATE foundation_profile SET name = ?, address = ?, phone = ?, email = ?, leader_name = ?, pembina_name = ?, pengawas_name = ? WHERE id = 1"
-            self._execute_query(up_query, (data['name'], data['address'], data['phone'], data['email'], data['leader_name'], data['pembina_name'], data['pengawas_name']))
-        else:
-            in_query = "INSERT INTO foundation_profile (id, name, address, phone, email, leader_name, pembina_name, pengawas_name) VALUES (1, ?, ?, ?, ?, ?, ?, ?)"
-            self._execute_query(in_query, (data['name'], data['address'], data['phone'], data['email'], data['leader_name'], data['pembina_name'], data['pengawas_name']))
+    def update_foundation_profile(self, name, addr, leader, pembina, pengawas, phone, email):
+        return self._execute_query("UPDATE foundation_profile SET name=?, address=?, leader_name=?, pembina_name=?, pengawas_name=?, phone=?, email=? WHERE id=1", (name, addr, leader, pembina, pengawas, phone, email), commit=True)
 
+    def get_cash_flow_categories(self):
+        return self._execute_query("SELECT name, main_category FROM cash_flow_categories ORDER BY main_category, name", fetch=True)
+
+    def get_annual_report_settings(self, year):
+        r = self._execute_query("SELECT vision, mission, program_summary, program_detail_edu, program_detail_social, organizational_structure, evaluation_constraints, future_plans FROM annual_report_settings WHERE year=?", (year,), fetch=True)
+        keys = ['vision', 'mission', 'program_summary', 'program_detail_edu', 'program_detail_social', 'organizational_structure', 'evaluation_constraints', 'future_plans']
+        return {keys[i]: r[0][i] for i in range(len(keys))} if r else {k: "" for k in keys}
+
+    def verify_login(self, u, p):
+        if u == 'admin' and p == 'admin123': return {'username': u, 'role': 'admin'}
+        return None
+
+    def get_journal_data_for_export(self):
+        q = "SELECT je.date, je.reference_no, je.description, a.code, a.name, jd.debit, jd.credit FROM journal_details jd JOIN journal_entries je ON jd.journal_id=je.id JOIN accounts a ON jd.account_id=a.id ORDER BY je.date, je.id"
+        r = self._execute_query(q, fetch=True)
+        return [{'Tanggal': x[0], 'Referensi': x[1], 'Keterangan': x[2], 'Kode Akun': x[3], 'Nama Akun': x[4], 'Debit': x[5], 'Kredit': x[6]} for x in r] if r else []
+
+    def generate_full_backup(self):
+        tables = ['accounts', 'journal_entries', 'journal_details', 'donors', 'assets_inventory', 'cash_flow_categories', 'foundation_profile', 'annual_report_settings']
+        backup = {}
+        conn = self.get_connection(); cursor = conn.cursor()
+        for t in tables:
+            cursor.execute(f"SELECT * FROM {t}")
+            rows = cursor.fetchall()
+            if self.db_type == "mysql":
+                cursor.execute(f"SHOW COLUMNS FROM {t}")
+                cols = [c[0] for c in cursor.fetchall()]
+            else:
+                cursor.execute(f"PRAGMA table_info({t})")
+                cols = [c[1] for c in cursor.fetchall()]
+            backup[t] = [dict(zip(cols, row)) for row in rows]
+        conn.close(); return backup
+
+    def restore_full_backup(self, data):
+        conn = self.get_connection(); cursor = conn.cursor()
+        try:
+            for t in ['journal_details', 'journal_entries', 'accounts', 'cash_flow_categories', 'assets_inventory', 'donors', 'foundation_profile', 'annual_report_settings']:
+                try: cursor.execute(f"DELETE FROM {t}")
+                except: pass
+            for t, rows in data.items():
+                if not rows: continue
+                cols = list(rows[0].keys())
+                placeholders = ", ".join(["%s" if self.db_type == "mysql" else "?" for _ in cols])
+                q = f"INSERT INTO {t} ({', '.join(cols)}) VALUES ({placeholders})"
+                cursor.executemany(q, [tuple(r[c] for c in cols) for r in rows])
+            conn.commit(); return True, "Success"
+        except Exception as e: conn.rollback(); return False, str(e)
+        finally: conn.close()

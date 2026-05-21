@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if donor %}Edit{% else %}Tambah{% endif %} Donatur</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0" style="border-radius: 15px;">
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Lengkap / Instansi</label>
+                        <input type="text" name="name" class="form-control" placeholder="Contoh: Bpk. Ahmad / PT. Maju Jaya" 
+                               value="{{ donor[1] if donor else '' }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">No. Telepon / HP</label>
+                            <input type="text" name="phone" class="form-control" placeholder="0812..." 
+                                   value="{{ donor[2] if donor else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipe Donatur</label>
+                            <select name="type" class="form-select">
+                                <option value="Individu" {% if donor and donor[4] == 'Individu' %}selected{% endif %}>Individu</option>
+                                <option value="Lembaga" {% if donor and donor[4] == 'Lembaga' %}selected{% endif %}>Lembaga/Instansi</option>
+                                <option value="Pemerintah" {% if donor and donor[4] == 'Pemerintah' %}selected{% endif %}>Pemerintah</option>
+                                <option value="Lainnya" {% if donor and donor[4] == 'Lainnya' %}selected{% endif %}>Lainnya</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea name="address" class="form-control" rows="3" placeholder="Alamat lengkap...">{{ donor[3] if donor else '' }}</textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Keterangan Tambahan</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Catatan khusus...">{{ donor[5] if donor else '' }}</textarea>
+                    </div>
+                    <div class="text-end">
+                        <a href="/donors" class="btn btn-secondary me-2">Batal</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>{% if donor %}Update{% else %}Simpan{% endif %} Donatur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light border-0" style="border-radius: 15px;">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle me-2 text-primary"></i>Informasi</h6>
+                <p class="small text-muted">
+                    Data donatur ini akan digunakan untuk mencatat penerimaan sumbangan di Jurnal Umum dan mempermudah pelacakan histori donasi.
+                </p>
+                <hr>
+                <p class="small mb-0">Pastikan nama dan kontak sudah benar untuk keperluan pembuatan kwitansi atau laporan nantinya.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
