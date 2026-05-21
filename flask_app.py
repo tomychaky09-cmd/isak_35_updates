@@ -92,6 +92,7 @@ def delete_coa(aid):
     db.delete_account(aid); flash('Akun dihapus.', 'success'); return redirect(url_for('coa_page'))
 
 # --- JOURNALS ---
+@app.route('/journals/')
 @app.route('/journals')
 @login_required
 def journals_page():
@@ -110,6 +111,21 @@ def add_journal():
             if db.add_journal_entry(date, desc, ref, dets): flash('Jurnal disimpan!', 'success'); return redirect(url_for('journals_page'))
         except Exception as e: flash(f'Error: {e}', 'danger')
     return render_template('journal_form.html', accounts=db.get_accounts(), cf_cats=db.get_cash_flow_categories())
+
+@app.route('/journals/edit/<int:jid>', methods=['GET', 'POST'])
+@login_required
+def edit_journal(jid):
+    if request.method == 'POST':
+        try:
+            date = request.form.get('date'); ref = request.form.get('ref_no'); desc = request.form.get('description')
+            ids = request.form.getlist('account_id[]'); dbt = request.form.getlist('debit[]'); crd = request.form.getlist('credit[]'); cf = request.form.getlist('cf_activity[]')
+            dets = []
+            for i in range(len(ids)):
+                if ids[i]: dets.append({'account_id': int(ids[i]), 'debit': float(dbt[i] or 0), 'credit': float(crd[i] or 0), 'cash_flow_activity': cf[i] if i < len(cf) else None})
+            if db.update_journal_entry(jid, date, desc, ref, dets): flash('Jurnal diperbarui!', 'success'); return redirect(url_for('journals_page'))
+        except Exception as e: flash(f'Error: {e}', 'danger')
+    data = db.get_journal_details(jid)
+    return render_template('journal_form.html', data=data, journal_id=jid, accounts=db.get_accounts(), cf_cats=db.get_cash_flow_categories())
 
 @app.route('/journals/<int:jid>')
 @login_required
