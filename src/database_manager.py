@@ -16,55 +16,39 @@ class DatabaseManager:
         self.config = self.load_config()
         self.db_type = self.config.get("db_type", "sqlite")
         self.mysql_config = self.config.get("mysql_config", {})
-
-        if hasattr(sys, '_MEIPASS'):
-            base_dir = os.path.dirname(sys.executable)
-        else:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        
-        if not os.path.isabs(db_path):
-            self.db_path = os.path.join(base_dir, db_path)
-        else:
-            self.db_path = db_path
-        
+        if hasattr(sys, '_MEIPASS'): base_dir = os.path.dirname(sys.executable)
+        else: base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if not os.path.isabs(db_path): self.db_path = os.path.join(base_dir, db_path)
+        else: self.db_path = db_path
         if self.db_type == "sqlite":
             db_dir = os.path.dirname(self.db_path)
             if not os.path.exists(db_dir):
                 try: os.makedirs(db_dir)
                 except: self.db_path = os.path.basename(db_path)
-        
         self._ensure_database_exists()
         self._update_schema()
 
     def _ensure_database_exists(self):
         if self.db_type == "mysql" and MYSQL_AVAILABLE:
             try:
-                conn = mysql.connector.connect(
-                    host=self.mysql_config.get("host"),
-                    user=self.mysql_config.get("user"),
-                    password=self.mysql_config.get("password")
-                )
+                conn = mysql.connector.connect(host=self.mysql_config.get("host"), user=self.mysql_config.get("user"), password=self.mysql_config.get("password"))
                 cursor = conn.cursor()
                 db_name = self.mysql_config.get("database")
-                if db_name:
-                    cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
+                if db_name: cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
                 conn.close()
             except: pass
 
     def load_config(self):
         if os.path.exists(self.CONFIG_FILE):
             try:
-                with open(self.CONFIG_FILE, 'r') as f:
-                    return json.load(f)
+                with open(self.CONFIG_FILE, 'r') as f: return json.load(f)
             except: return {}
         return {}
 
     def get_connection(self):
         if self.db_type == "mysql" and MYSQL_AVAILABLE:
-            try:
-                return mysql.connector.connect(**self.mysql_config)
-            except:
-                return sqlite3.connect(self.db_path)
+            try: return mysql.connector.connect(**self.mysql_config)
+            except: return sqlite3.connect(self.db_path)
         return sqlite3.connect(self.db_path)
 
     def _execute_query(self, query, params=(), fetch=False, commit=False):
@@ -72,16 +56,13 @@ class DatabaseManager:
         if self.db_type == "mysql":
             query = query.replace("?", "%s")
             cursor = conn.cursor(buffered=True)
-        else:
-            cursor = conn.cursor()
-        
+        else: cursor = conn.cursor()
         try:
             cursor.execute(query, params)
             if commit: conn.commit()
             if fetch: return cursor.fetchall()
             return True
-        except Exception as e:
-            print(f"DB Error: {e}"); return None
+        except: return None
         finally: conn.close()
 
     def _update_schema(self):
@@ -96,47 +77,54 @@ class DatabaseManager:
             cursor.execute(f"CREATE TABLE IF NOT EXISTS cash_flow_categories (id {pk}, name VARCHAR(255) UNIQUE, main_category VARCHAR(255))")
             cursor.execute("CREATE TABLE IF NOT EXISTS foundation_profile (id INTEGER PRIMARY KEY CHECK (id = 1), name VARCHAR(255), address TEXT, leader_name VARCHAR(255), pembina_name VARCHAR(255), pengawas_name VARCHAR(255), logo_path TEXT, phone VARCHAR(50), email VARCHAR(100))")
             cursor.execute("CREATE TABLE IF NOT EXISTS annual_report_settings (year INTEGER PRIMARY KEY, vision TEXT, mission TEXT, program_summary TEXT, program_detail_edu TEXT, program_detail_social TEXT, organizational_structure TEXT, evaluation_constraints TEXT, future_plans TEXT)")
-            
             cursor.execute("SELECT COUNT(*) FROM foundation_profile")
-            if cursor.fetchone()[0] == 0:
-                cursor.execute("INSERT INTO foundation_profile (id, name) VALUES (1, 'Yayasan ISAK 35')")
-            
+            if cursor.fetchone()[0] == 0: cursor.execute("INSERT INTO foundation_profile (id, name) VALUES (1, 'Yayasan ISAK 35')")
             cursor.execute("SELECT COUNT(*) FROM cash_flow_categories")
             if cursor.fetchone()[0] == 0:
-                cats = [
-                    ('Penerimaan Donasi / Infaq', 'ARUS KAS DARI AKTIVITAS OPERASI'),
-                    ('Pembelian Aset Tetap', 'ARUS KAS DARI AKTIVITAS INVESTASI'),
-                    ('Penerimaan Pinjaman', 'ARUS KAS DARI AKTIVITAS PENDANAAN')
-                ]
+                cats = [('Penerimaan Donasi / Infaq', 'ARUS KAS DARI AKTIVITAS OPERASI'),('Pembelian Aset Tetap', 'ARUS KAS DARI AKTIVITAS INVESTASI'),('Penerimaan Pinjaman', 'ARUS KAS DARI AKTIVITAS PENDANAAN')]
                 q = "INSERT INTO cash_flow_categories (name, main_category) VALUES (%s, %s)" if self.db_type == "mysql" else "INSERT INTO cash_flow_categories (name, main_category) VALUES (?, ?)"
                 cursor.executemany(q, cats)
             conn.commit()
         except: pass
         finally: conn.close()
 
+    # --- ACCOUNTS ---
     def get_accounts(self):
-        return self._execute_query("SELECT id, code, name, type, category, notes FROM accounts ORDER BY code", fetch=True)
+        r = self._execute_query("SELECT id, code, name, type, category, notes FROM accounts ORDER BY code", fetch=True)
+        return [{'id': x[0], 'code': x[1], 'name': x[2], 'type': x[3], 'category': x[4], 'notes': x[5]} for x in r] if r else []
 
-    def add_account(self, code, name, type, category, notes=""):
-        q = "INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)"
-        return self._execute_query(q, (code, name, type, category, notes), commit=True)
+    def add_account(self, code, name, t, cat, n=""):
+        return self._execute_query("INSERT INTO accounts (code, name, type, category, notes) VALUES (?, ?, ?, ?, ?)", (code, name, t, cat, n), commit=True)
 
-    def update_account(self, aid, code, name, type, category, notes=""):
-        q = "UPDATE accounts SET code=?, name=?, type=?, category=?, notes=? WHERE id=?"
-        return self._execute_query(q, (code, name, type, category, notes, aid), commit=True)
+    def update_account(self, aid, code, name, t, cat, n=""):
+        return self._execute_query("UPDATE accounts SET code=?, name=?, type=?, category=?, notes=? WHERE id=?", (code, name, t, cat, n, aid), commit=True)
 
     def delete_account(self, aid):
         return self._execute_query("DELETE FROM accounts WHERE id=?", (aid,), commit=True)
 
-    def add_journal_entry(self, date, description, ref_no, details):
+    # --- JOURNALS ---
+    def add_journal_entry(self, date, desc, ref, details):
         conn = self.get_connection(); cursor = conn.cursor()
         try:
             q1 = "INSERT INTO journal_entries (date, description, reference_no) VALUES (%s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_entries (date, description, reference_no) VALUES (?, ?, ?)"
-            cursor.execute(q1, (date, description, ref_no))
-            jid = cursor.lastrowid
+            cursor.execute(q1, (date, desc, ref)); jid = cursor.lastrowid
             q2 = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
-            for d in details:
-                cursor.execute(q2, (jid, d['account_id'], d['debit'], d['credit'], d.get('cash_flow_activity')))
+            for d in details: cursor.execute(q2, (jid, d['account_id'], d['debit'], d['credit'], d.get('cash_flow_activity')))
+            conn.commit(); return True
+        except: conn.rollback(); return False
+        finally: conn.close()
+
+    def update_journal_entry(self, jid, date, desc, ref, details):
+        conn = self.get_connection(); cursor = conn.cursor()
+        try:
+            q1 = "UPDATE journal_entries SET date=?, description=?, reference_no=? WHERE id=?"
+            if self.db_type == "mysql": q1 = q1.replace("?", "%s")
+            cursor.execute(q1, (date, desc, ref, jid))
+            q2 = "DELETE FROM journal_details WHERE journal_id=?"
+            if self.db_type == "mysql": q2 = q2.replace("?", "%s")
+            cursor.execute(q2, (jid,))
+            q3 = "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (%s, %s, %s, %s, %s)" if self.db_type == "mysql" else "INSERT INTO journal_details (journal_id, account_id, debit, credit, cash_flow_activity) VALUES (?, ?, ?, ?, ?)"
+            for d in details: cursor.execute(q3, (jid, d['account_id'], d['debit'], d['credit'], d.get('cash_flow_activity')))
             conn.commit(); return True
         except: conn.rollback(); return False
         finally: conn.close()
@@ -154,20 +142,15 @@ class DatabaseManager:
     def delete_journal_entry(self, jid):
         conn = self.get_connection(); cursor = conn.cursor()
         try:
-            q_del_d = "DELETE FROM journal_details WHERE journal_id = %s" if self.db_type == "mysql" else "DELETE FROM journal_details WHERE journal_id = ?"
-            q_del_h = "DELETE FROM journal_entries WHERE id = %s" if self.db_type == "mysql" else "DELETE FROM journal_entries WHERE id = ?"
-            cursor.execute(q_del_d, (jid,))
-            cursor.execute(q_del_h, (jid,))
-            conn.commit(); return True
+            q1 = "DELETE FROM journal_details WHERE journal_id=?"; q2 = "DELETE FROM journal_entries WHERE id=?"
+            if self.db_type == "mysql": q1 = q1.replace("?", "%s"); q2 = q2.replace("?", "%s")
+            cursor.execute(q1, (jid,)); cursor.execute(q2, (jid,)); conn.commit(); return True
         except: conn.rollback(); return False
         finally: conn.close()
 
+    # --- REPORTS & LEDGER ---
     def get_trial_balance(self):
-        query = """
-        SELECT a.id, a.code, a.name, a.type, a.category, SUM(COALESCE(jd.debit, 0)), SUM(COALESCE(jd.credit, 0))
-        FROM accounts a LEFT JOIN journal_details jd ON a.id = jd.account_id
-        GROUP BY a.id, a.code, a.name, a.type, a.category ORDER BY a.code
-        """
+        query = "SELECT a.id, a.code, a.name, a.type, a.category, SUM(COALESCE(jd.debit, 0)), SUM(COALESCE(jd.credit, 0)) FROM accounts a LEFT JOIN journal_details jd ON a.id = jd.account_id GROUP BY a.id, a.code, a.name, a.type, a.category ORDER BY a.code"
         r = self._execute_query(query, fetch=True)
         res = []
         for x in r:
@@ -189,8 +172,10 @@ class DatabaseManager:
         r = self._execute_query("SELECT je.date, je.description, je.reference_no, jd.debit, jd.credit FROM journal_details jd JOIN journal_entries je ON jd.journal_id=je.id WHERE jd.account_id=? ORDER BY je.date, je.id", (aid,), fetch=True)
         return [{'date': x[0], 'description': x[1], 'reference_no': x[2], 'debit': x[3], 'credit': x[4]} for x in r] if r else []
 
+    # --- DONORS ---
     def get_donors(self):
-        return self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name", fetch=True)
+        r = self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name", fetch=True)
+        return [{'id': x[0], 'name': x[1], 'phone': x[2], 'address': x[3], 'type': x[4], 'description': x[5]} for x in r] if r else []
 
     def add_donor(self, name, phone, address, t, desc):
         return self._execute_query("INSERT INTO donors (name, phone, address, donor_type, description) VALUES (?, ?, ?, ?, ?)", (name, phone, address, t, desc), commit=True)
@@ -201,8 +186,10 @@ class DatabaseManager:
     def delete_donor(self, did):
         return self._execute_query("DELETE FROM donors WHERE id=?", (did,), commit=True)
 
+    # --- ASSETS ---
     def get_assets_inventory(self):
-        return self._execute_query("SELECT id, date, code, name, location, estimated_value, quantity, description FROM assets_inventory ORDER BY date DESC", fetch=True)
+        r = self._execute_query("SELECT id, date, code, name, location, estimated_value, quantity, description FROM assets_inventory ORDER BY date DESC", fetch=True)
+        return [{'id': x[0], 'date': x[1], 'code': x[2], 'name': x[3], 'location': x[4], 'estimated_value': x[5], 'quantity': x[6], 'description': x[7]} for x in r] if r else []
 
     def add_asset_inventory(self, date, code, name, loc, val, qty, desc):
         return self._execute_query("INSERT INTO assets_inventory (date, code, name, location, estimated_value, quantity, description) VALUES (?, ?, ?, ?, ?, ?, ?)", (date, code, name, loc, val, qty, desc), commit=True)
@@ -213,6 +200,7 @@ class DatabaseManager:
     def delete_asset_inventory(self, aid):
         return self._execute_query("DELETE FROM assets_inventory WHERE id=?", (aid,), commit=True)
 
+    # --- OTHER ---
     def get_foundation_profile(self):
         r = self._execute_query("SELECT name, address, leader_name, pembina_name, pengawas_name, logo_path, phone, email FROM foundation_profile WHERE id=1", fetch=True)
         if r: return {'name': r[0][0], 'address': r[0][1], 'leader_name': r[0][2], 'pembina_name': r[0][3], 'pengawas_name': r[0][4], 'logo_path': r[0][5], 'phone': r[0][6], 'email': r[0][7]}
@@ -222,7 +210,8 @@ class DatabaseManager:
         return self._execute_query("UPDATE foundation_profile SET name=?, address=?, leader_name=?, pembina_name=?, pengawas_name=?, phone=?, email=? WHERE id=1", (name, addr, leader, pembina, pengawas, phone, email), commit=True)
 
     def get_cash_flow_categories(self):
-        return self._execute_query("SELECT name, main_category FROM cash_flow_categories ORDER BY main_category, name", fetch=True)
+        r = self._execute_query("SELECT name, main_category FROM cash_flow_categories ORDER BY main_category, name", fetch=True)
+        return [{'name': x[0], 'main_category': x[1]} for x in r] if r else []
 
     def get_annual_report_settings(self, year):
         r = self._execute_query("SELECT vision, mission, program_summary, program_detail_edu, program_detail_social, organizational_structure, evaluation_constraints, future_plans FROM annual_report_settings WHERE year=?", (year,), fetch=True)
@@ -243,14 +232,11 @@ class DatabaseManager:
         backup = {}
         conn = self.get_connection(); cursor = conn.cursor()
         for t in tables:
-            cursor.execute(f"SELECT * FROM {t}")
-            rows = cursor.fetchall()
+            cursor.execute(f"SELECT * FROM {t}"); rows = cursor.fetchall()
             if self.db_type == "mysql":
-                cursor.execute(f"SHOW COLUMNS FROM {t}")
-                cols = [c[0] for c in cursor.fetchall()]
+                cursor.execute(f"SHOW COLUMNS FROM {t}"); cols = [c[0] for c in cursor.fetchall()]
             else:
-                cursor.execute(f"PRAGMA table_info({t})")
-                cols = [c[1] for c in cursor.fetchall()]
+                cursor.execute(f"PRAGMA table_info({t})"); cols = [c[1] for c in cursor.fetchall()]
             backup[t] = [dict(zip(cols, row)) for row in rows]
         conn.close(); return backup
 
@@ -262,8 +248,7 @@ class DatabaseManager:
                 except: pass
             for t, rows in data.items():
                 if not rows: continue
-                cols = list(rows[0].keys())
-                placeholders = ", ".join(["%s" if self.db_type == "mysql" else "?" for _ in cols])
+                cols = list(rows[0].keys()); placeholders = ", ".join(["%s" if self.db_type == "mysql" else "?" for _ in cols])
                 q = f"INSERT INTO {t} ({', '.join(cols)}) VALUES ({placeholders})"
                 cursor.executemany(q, [tuple(r[c] for c in cols) for r in rows])
             conn.commit(); return True, "Success"
