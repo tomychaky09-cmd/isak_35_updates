@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Daftar Donatur</h1>
-    <a href="/donors/add" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Tambah Donatur</a>
+    <a href="{{ url_for('add_donor') }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Tambah Donatur</a>
 </div>
 
 <div class="card shadow-sm border-0" style="border-radius: 15px;">
@@ -12,31 +12,35 @@
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Nama Donatur</th>
-                        <th>Telepon/WA</th>
-                        <th>Tipe</th>
+                        <th>Nama</th>
+                        <th>Telepon</th>
                         <th>Alamat</th>
-                        <th>Aksi</th>
+                        <th>Tipe</th>
+                        <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for d in donors %}
                     <tr>
-                        <td><strong>{{ d[1] }}</strong><br><small class="text-muted">{{ d[5] or '' }}</small></td>
-                        <td>{{ d[2] or '-' }}</td>
-                        <td><span class="badge bg-secondary">{{ d[4] }}</span></td>
-                        <td>{{ d[3] or '-' }}</td>
-                        <td>
+                        <td><strong>{{ d.name }}</strong></td>
+                        <td>{{ d.phone or '-' }}</td>
+                        <td>{{ d.address or '-' }}</td>
+                        <td><span class="badge bg-secondary">{{ d.type }}</span></td>
+                        <td class="text-center">
                             <div class="btn-group">
-                                <a href="/donors/edit/{{ d[0] }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                <a href="{{ url_for('edit_donor', did=d.id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" 
-                                        onclick="if(confirm('Hapus donatur ini?')) window.location.href='/donors/delete/{{ d[0] }}'">
+                                        onclick="if(confirm('Hapus donatur {{ d.name }}?')) window.location.href='{{ url_for('delete_donor', did=d.id) }}'">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">Belum ada data donatur.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

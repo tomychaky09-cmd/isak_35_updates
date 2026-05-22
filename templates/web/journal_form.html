@@ -11,15 +11,15 @@
             <div class="row">
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Tanggal</label>
-                    <input type="date" name="date" class="form-control" value="{{ journal_header[0] if journal_header else now }}" required>
+                    <input type="date" name="date" class="form-control" value="{{ data.header.date if data else now }}" required>
                 </div>
                 <div class="col-md-3 mb-3">
                     <label class="form-label">No. Referensi</label>
-                    <input type="text" name="ref_no" class="form-control" placeholder="JU-001" value="{{ journal_header[2] if journal_header else '' }}">
+                    <input type="text" name="ref_no" class="form-control" placeholder="JU-001" value="{{ data.header.reference_no if data else '' }}">
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Keterangan</label>
-                    <input type="text" name="description" class="form-control" placeholder="Deskripsi transaksi" value="{{ journal_header[1] if journal_header else '' }}" required>
+                    <input type="text" name="description" class="form-control" placeholder="Deskripsi transaksi" value="{{ data.header.description if data else '' }}" required>
                 </div>
             </div>
         </div>
@@ -45,24 +45,24 @@
                         </tr>
                     </thead>
                     <tbody id="journalBody">
-                        {% if journal_details %}
-                            {% for det in journal_details %}
+                        {% if data and data.details %}
+                            {% for det in data.details %}
                             <tr>
                                 <td>
                                     <select name="account_id[]" class="form-select" required>
                                         <option value="">Pilih Akun...</option>
                                         {% for acc in accounts %}
-                                        <option value="{{ acc[0] }}" {% if acc[1] == det[0] %}selected{% endif %}>{{ acc[1] }} - {{ acc[2] }}</option>
+                                        <option value="{{ acc.id }}" {% if acc.id == det.account_id %}selected{% endif %}>{{ acc.code }} - {{ acc.name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
-                                <td><input type="number" name="debit[]" class="form-control debit-input" value="{{ det[2] }}" step="0.01"></td>
-                                <td><input type="number" name="credit[]" class="form-control credit-input" value="{{ det[3] }}" step="0.01"></td>
+                                <td><input type="number" name="debit[]" class="form-control debit-input" value="{{ det.debit }}" step="0.01"></td>
+                                <td><input type="number" name="credit[]" class="form-control credit-input" value="{{ det.credit }}" step="0.01"></td>
                                 <td>
                                     <select name="cf_activity[]" class="form-select">
                                         <option value="">None</option>
                                         {% for cat in cf_cats %}
-                                        <option value="{{ cat[1] }}" {% if det[4] == cat[1] %}selected{% endif %}>{{ cat[1] }}</option>
+                                        <option value="{{ cat.name }}" {% if det.cash_flow_activity == cat.name %}selected{% endif %}>{{ cat.name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
@@ -77,7 +77,7 @@
                                     <select name="account_id[]" class="form-select" required>
                                         <option value="">Pilih Akun...</option>
                                         {% for acc in accounts %}
-                                        <option value="{{ acc[0] }}">{{ acc[1] }} - {{ acc[2] }}</option>
+                                        <option value="{{ acc.id }}">{{ acc.code }} - {{ acc.name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
@@ -87,7 +87,7 @@
                                     <select name="cf_activity[]" class="form-select">
                                         <option value="">None</option>
                                         {% for cat in cf_cats %}
-                                        <option value="{{ cat[1] }}">{{ cat[1] }}</option>
+                                        <option value="{{ cat.name }}">{{ cat.name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
@@ -111,7 +111,7 @@
     </div>
 
     <div class="text-end mb-5">
-        <a href="/journals" class="btn btn-secondary me-2">Batal</a>
+        <a href="{{ url_for('journals_page') }}" class="btn btn-secondary me-2">Batal</a>
         <button type="submit" class="btn btn-primary px-5" id="submitBtn" disabled>
             <i class="fas fa-save me-2"></i>{% if journal_id %}Update{% else %}Simpan{% endif %} Jurnal
         </button>
@@ -142,7 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
         totalDebitEl.textContent = totalDebit.toLocaleString('id-ID');
         totalCreditEl.textContent = totalCredit.toLocaleString('id-ID');
 
-        // Gunakan pembulatan untuk menghindari masalah presisi float
         if (Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0) {
             balanceStatusEl.textContent = 'Seimbang';
             balanceStatusEl.className = 'text-success small';
@@ -157,14 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
     addRowBtn.addEventListener('click', function() {
         const firstRow = journalBody.querySelector('tr');
         const newRow = firstRow.cloneNode(true);
-        
-        // Reset values
         newRow.querySelectorAll('input').forEach(input => input.value = '0');
         newRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
-        
         journalBody.appendChild(newRow);
-        
-        // Re-attach listeners
         attachRowListeners(newRow);
     });
 
@@ -175,18 +169,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 calculateTotals();
             }
         });
-
         row.querySelectorAll('.debit-input, .credit-input').forEach(input => {
             input.addEventListener('input', calculateTotals);
         });
     }
 
-    // Attach to all rows
     document.querySelectorAll('#journalBody tr').forEach(row => {
         attachRowListeners(row);
     });
     
-    // Initial calculation
     calculateTotals();
 });
 </script>

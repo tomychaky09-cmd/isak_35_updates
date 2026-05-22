@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Inventaris Aset</h1>
-    <a href="/assets/add" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Tambah Aset</a>
+    <a href="{{ url_for('add_asset') }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Tambah Aset</a>
 </div>
 
 <div class="card shadow-sm border-0" style="border-radius: 15px;">
@@ -15,30 +15,34 @@
                         <th>Kode</th>
                         <th>Nama Aset</th>
                         <th>Lokasi</th>
-                        <th class="text-end">Estimasi Nilai</th>
-                        <th class="text-center">Jumlah</th>
+                        <th>Nilai Estimasi</th>
+                        <th>Qty</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for a in assets %}
                     <tr>
-                        <td><code>{{ a[2] }}</code></td>
-                        <td>{{ a[3] }}<br><small class="text-muted">{{ a[7] or '' }}</small></td>
-                        <td>{{ a[4] or '-' }}</td>
-                        <td class="text-end text-primary">Rp {{ "{:,.0f}".format(a[5]) }}</td>
-                        <td class="text-center">{{ a[6] }}</td>
+                        <td><code>{{ a.code }}</code></td>
+                        <td>{{ a.name }}</td>
+                        <td>{{ a.location }}</td>
+                        <td>Rp {{ "{:,.0f}".format(a.estimated_value) }}</td>
+                        <td>{{ a.quantity }}</td>
                         <td class="text-center">
                             <div class="btn-group">
-                                <a href="/assets/edit/{{ a[0] }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                <a href="{{ url_for('edit_asset', aid=a.id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" 
-                                        onclick="if(confirm('Hapus aset ini dari inventaris?')) window.location.href='/assets/delete/{{ a[0] }}'">
+                                        onclick="if(confirm('Hapus aset {{ a.name }}?')) window.location.href='{{ url_for('delete_asset', aid=a.id) }}'">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Belum ada data aset.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

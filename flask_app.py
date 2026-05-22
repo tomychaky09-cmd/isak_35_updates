@@ -83,7 +83,7 @@ def edit_coa(aid):
         db.update_account(aid, request.form.get('code'), request.form.get('name'), request.form.get('type'), request.form.get('category'), request.form.get('notes'))
         flash('Akun diperbarui!', 'success'); return redirect(url_for('coa_page'))
     accs = db.get_accounts()
-    acc = next((x for x in accs if x[0] == aid), None)
+    acc = next((x for x in accs if x['id'] == aid), None)
     return render_template('coa_form.html', account=acc)
 
 @app.route('/coa/delete/<int:aid>')
@@ -166,7 +166,7 @@ def edit_asset(aid):
         db.update_asset_inventory(aid, request.form.get('date'), request.form.get('code'), request.form.get('name'), request.form.get('location'), float(request.form.get('estimated_value') or 0), int(request.form.get('quantity') or 1), request.form.get('description'))
         flash('Aset diperbarui!', 'success'); return redirect(url_for('assets_page'))
     assets = db.get_assets_inventory()
-    asset = next((x for x in assets if x[0] == aid), None)
+    asset = next((x for x in assets if x['id'] == aid), None)
     return render_template('asset_form.html', asset=asset)
 
 @app.route('/assets/delete/<int:aid>')
@@ -219,7 +219,7 @@ def ledger_detail(aid):
     bal = 0; res = []
     for e in ents:
         d = e['debit'] or 0; c = e['credit'] or 0
-        if curr[3] in ['Asset', 'Expense']: bal += (d - c)
+        if curr['type'] in ['Asset', 'Expense']: bal += (d - c)
         else: bal += (c - d)
         e['running_balance'] = bal; res.append(e)
     return render_template('ledger_detail.html', account=curr, entries=res, final_balance=bal)
