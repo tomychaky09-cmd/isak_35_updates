@@ -198,16 +198,19 @@ class ReportGenerator:
     def export_annual_report_to_pdf(self, file_path, year):
         try:
             settings = self.db.get_annual_report_settings(year)
+            profile = self.db.get_foundation_profile()
             if not settings: return False
             
             pdf = FPDF()
             pdf.add_page()
+            
+            # Judul
             pdf.set_font("Arial", 'B', 16)
             pdf.cell(0, 10, f"Laporan Tahunan {year}", ln=True, align='C')
             pdf.ln(10)
             
+            # Isi Laporan
             pdf.set_font("Arial", '', 12)
-            
             sections = [
                 ("Visi", settings.get('vision', '')),
                 ("Misi", settings.get('mission', '')),
@@ -225,6 +228,27 @@ class ReportGenerator:
                 pdf.set_font("Arial", '', 11)
                 pdf.multi_cell(0, 7, str(content))
                 pdf.ln(5)
+                
+            # Halaman Pengesahan (Halaman Terpisah)
+            pdf.add_page()
+            pdf.set_font("Arial", 'B', 14)
+            pdf.cell(0, 10, "LEMBAR PENGESAHAN", ln=True, align='C')
+            pdf.ln(20)
+            
+            # Tanda Tangan
+            pdf.set_font("Arial", '', 12)
+            y_pos = pdf.get_y()
+            
+            # Kiri: Pengurus / Pimpinan
+            pdf.cell(95, 10, "Disusun oleh,", ln=False, align='C')
+            # Kanan: Pembina
+            pdf.cell(95, 10, "Disahkan oleh,", ln=True, align='C')
+            pdf.ln(30)
+            
+            pdf.cell(95, 10, profile.get('leader_name', '...................'), ln=False, align='C')
+            pdf.cell(95, 10, profile.get('pembina_name', '...................'), ln=True, align='C')
+            pdf.cell(95, 10, "Pimpinan Yayasan", ln=False, align='C')
+            pdf.cell(95, 10, "Pembina Yayasan", ln=True, align='C')
             
             pdf.output(file_path)
             return True
