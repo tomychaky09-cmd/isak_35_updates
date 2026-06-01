@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 text-danger"><i class="fas fa-trash-alt me-2"></i>Reset / Hapus Data</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-database me-2 text-primary"></i>Manajemen Database (.db)</h5>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <div class="row">
+                    <div class="col-md-6 border-end">
+                        <h6 class="fw-bold small text-uppercase text-muted mb-3">Ekspor (Backup)</h6>
+                        <p class="small text-muted mb-3">Unduh file database saat ini untuk digunakan di aplikasi desktop.</p>
+                        <a href="{{ url_for('backup_db') }}" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-file-download me-2"></i>Download Backup (.db)
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold small text-uppercase text-muted mb-3 text-danger">Impor (Restore)</h6>
+                        <p class="small text-muted mb-3">Ganti seluruh data web dengan file .db dari desktop (Data web akan hilang!).</p>
+                        <form action="{{ url_for('import_db') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirm('PERINGATAN: Seluruh data di web akan DIGANTIKAN dengan file yang Anda unggah. Lanjutkan?')">
+                            <div class="input-group input-group-sm">
+                                <input type="file" name="file" class="form-control" accept=".db" required>
+                                <button class="btn btn-danger" type="submit">Unggah</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0" style="border-radius: 15px;">
+            <div class="card-body p-4">
+                <div class="alert alert-warning border-0 shadow-sm mb-4">
+                    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Peringatan Penting!</h5>
+                    <p class="mb-0 small text-dark">Data yang dihapus tidak dapat dikembalikan. Pastikan Anda sudah melakukan sinkronisasi atau cadangan (backup) jika data tersebut masih diperlukan.</p>
+                </div>
+
+                <form action="{{ url_for('reset_data_process') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data terpilih? Tindakan ini permanen!')">
+                    <h6 class="mb-3 fw-bold">Pilih Data yang Akan Dihapus:</h6>
+                    
+                    <div class="list-group mb-4">
+                        <label class="list-group-item d-flex gap-3 py-3 border-0 bg-light mb-2" style="border-radius: 10px;">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" name="tables" value="journals" style="font-size: 1.2em;">
+                            <span class="pt-1">
+                                <strong>Transaksi Jurnal Umum</strong>
+                                <small class="d-block text-muted">Menghapus semua entri jurnal dan rincian transaksi keuangan.</small>
+                            </span>
+                        </label>
+
+                        <label class="list-group-item d-flex gap-3 py-3 border-0 bg-light mb-2" style="border-radius: 10px;">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" name="tables" value="accounts" style="font-size: 1.2em;">
+                            <span class="pt-1">
+                                <strong>Daftar Akun (COA)</strong>
+                                <small class="d-block text-muted">Menghapus seluruh struktur bagan akun yayasan.</small>
+                            </span>
+                        </label>
+
+                        <label class="list-group-item d-flex gap-3 py-3 border-0 bg-light mb-2" style="border-radius: 10px;">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" name="tables" value="donors" style="font-size: 1.2em;">
+                            <span class="pt-1">
+                                <strong>Data Donatur</strong>
+                                <small class="d-block text-muted">Menghapus seluruh database kontak donatur.</small>
+                            </span>
+                        </label>
+
+                        <label class="list-group-item d-flex gap-3 py-3 border-0 bg-light mb-2" style="border-radius: 10px;">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" name="tables" value="assets" style="font-size: 1.2em;">
+                            <span class="pt-1">
+                                <strong>Inventaris Aset</strong>
+                                <small class="d-block text-muted">Menghapus seluruh daftar aset tetap dan inventaris.</small>
+                            </span>
+                        </label>
+
+                        <label class="list-group-item d-flex gap-3 py-3 border-0 bg-light mb-2" style="border-radius: 10px;">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" name="tables" value="cashflow" style="font-size: 1.2em;">
+                            <span class="pt-1">
+                                <strong>Kategori Arus Kas</strong>
+                                <small class="d-block text-muted">Menghapus kategori mapping untuk laporan arus kas.</small>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                            <label class="form-check-label small fw-bold" for="selectAll">Pilih Semua Data</label>
+                        </div>
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="fas fa-trash-alt me-2"></i>Hapus Permanen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-dark text-white" style="border-radius: 15px;">
+            <div class="card-body p-4 text-center">
+                <i class="fas fa-user-shield fa-3x mb-3 text-warning"></i>
+                <h5>Mode Keamanan</h5>
+                <p class="small opacity-75">Tindakan ini memerlukan otoritas penuh. Pastikan Anda adalah administrator sistem sebelum melanjutkan.</p>
+                <hr class="border-secondary">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-sm w-100">Batal & Kembali ke Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSelectAll(source) {
+    checkboxes = document.getElementsByName('tables');
+    for(var i=0, n=checkboxes.length; i<n; i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if account %}Edit{% else %}Tambah{% endif %} Akun (COA)</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0" style="border-radius: 15px;">
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Kode Akun</label>
+                            <input type="text" name="code" class="form-control" placeholder="Contoh: 1001" 
+                                   value="{{ account.code if account else '' }}" required {% if account %}readonly{% endif %}>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nama Akun</label>
+                            <input type="text" name="name" class="form-control" placeholder="Contoh: Kas Kecil" 
+                                   value="{{ account.name if account else '' }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipe Akun</label>
+                            <select name="type" class="form-select" required>
+                                <option value="Asset" {% if account and account.type == 'Asset' %}selected{% endif %}>Asset</option>
+                                <option value="Liability" {% if account and account.type == 'Liability' %}selected{% endif %}>Liability</option>
+                                <option value="Asset Net" {% if account and account.type == 'Asset Net' %}selected{% endif %}>Asset Net (Ekuitas)</option>
+                                <option value="Revenue" {% if account and account.type == 'Revenue' %}selected{% endif %}>Revenue (Pendapatan)</option>
+                                <option value="Expense" {% if account and account.type == 'Expense' %}selected{% endif %}>Expense (Beban)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kategori Pembatasan</label>
+                            <select name="category" class="form-select" required>
+                                <option value="None" {% if account and account.category == 'None' %}selected{% endif %}>Tanpa Kategori (Asset/Liab)</option>
+                                <option value="Without Restriction" {% if account and account.category == 'Without Restriction' %}selected{% endif %}>Tanpa Pembatasan</option>
+                                <option value="With Restriction" {% if account and account.category == 'With Restriction' %}selected{% endif %}>Dengan Pembatasan</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Catatan Tambahan</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Catatan kegunaan akun...">{{ account.notes if account else '' }}</textarea>
+                    </div>
+                    
+                    <div class="text-end">
+                        <a href="{{ url_for('coa_page') }}" class="btn btn-secondary me-2">Batal</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>{% if account %}Update{% else %}Simpan{% endif %} Akun
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light border-0" style="border-radius: 15px;">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle me-2 text-primary"></i>Panduan COA</h6>
+                <p class="small text-muted">
+                    Bagan Akun (Chart of Accounts) adalah fondasi sistem akuntansi Anda.
+                </p>
+                <ul class="small text-muted ps-3">
+                    <li><strong>Asset/Liability:</strong> Gunakan kategori 'None'.</li>
+                    <li><strong>Revenue/Expense:</strong> Pilih pembatasan yang sesuai (ISAK 35).</li>
+                    <li><strong>Asset Net:</strong> Ini adalah saldo awal atau akumulasi surplus/defisit.</li>
+                </ul>
+                <hr>
+                <p class="small mb-0">Hati-hati saat mengubah tipe akun jika sudah ada transaksi yang tercatat.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

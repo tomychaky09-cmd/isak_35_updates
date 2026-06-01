@@ -1,0 +1,21 @@
+venv/
+deploy_pythonanywhere/
+deploy_pythonanywhere.zip
+*.pyc
+__pycache__/
+.env
+.DS_Store
+instance/
+.vscode/
+.idea/
+database/*.db
+!database/foundation_finance.db
+
+# Junk/Backup Folders
+desktop_app/
+archives_and_docs/
+backup_*/
+deploy_*/
+*.zip
+*.txt
+*.xlsx

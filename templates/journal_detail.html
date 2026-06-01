@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('journals_page') }}">Daftar Jurnal</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Detail Jurnal</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Detail Jurnal #{{ data.header.reference_no or data.header.date }}</h1>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <p class="text-muted mb-1">Tanggal</p>
+                <h5>{{ data.header.date }}</h5>
+            </div>
+            <div class="col-md-4">
+                <p class="text-muted mb-1">No. Referensi</p>
+                <h5><code>{{ data.header.reference_no or '-' }}</code></h5>
+            </div>
+            <div class="col-md-4">
+                <p class="text-muted mb-1">Keterangan</p>
+                <h5>{{ data.header.description }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 15px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Kode Akun</th>
+                        <th>Nama Akun</th>
+                        <th class="text-end">Debit</th>
+                        <th class="text-end pe-4">Kredit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in data.details %}
+                    <tr>
+                        <td class="ps-4"><strong>{{ d.code }}</strong></td>
+                        <td>{{ d.name }}</td>
+                        <td class="text-end text-success">
+                            {% if d.debit > 0 %}Rp {{ "{:,.0f}".format(d.debit) }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-end text-danger pe-4">
+                            {% if d.credit > 0 %}Rp {{ "{:,.0f}".format(d.credit) }}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

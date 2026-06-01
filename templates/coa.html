@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Daftar Akun (Chart of Accounts)</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="fas fa-file-import me-1"></i>Impor dari Excel
+            </button>
+            <a href="{{ url_for('add_coa') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i>Tambah Akun
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Impor -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('import_coa') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Impor Akun dari Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Pilih file Excel hasil ekspor dari aplikasi desktop atau gunakan format yang sesuai.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Pilih File (.xlsx)</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Mulai Impor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 15px;">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Akun</th>
+                        <th>Tipe</th>
+                        <th>Kategori</th>
+                        <th>Catatan</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for acc in accounts %}
+                    <tr>
+                        <td><strong>{{ acc.code }}</strong></td>
+                        <td>{{ acc.name }}</td>
+                        <td><span class="badge bg-info text-dark">{{ acc.type }}</span></td>
+                        <td>{{ acc.category }}</td>
+                        <td class="small">{{ acc.notes or '-' }}</td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <a href="{{ url_for('edit_coa', aid=acc.id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" 
+                                        onclick="if(confirm('Hapus akun {{ acc.name }}?')) window.location.href='{{ url_for('delete_coa', aid=acc.id) }}'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Belum ada data akun.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

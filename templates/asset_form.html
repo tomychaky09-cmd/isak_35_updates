@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if asset %}Edit{% else %}Tambah{% endif %} Aset Inventaris</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0" style="border-radius: 15px;">
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tanggal Perolehan</label>
+                            <input type="date" name="date" class="form-control" 
+                                   value="{{ asset.date if asset else now }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Kode Aset</label>
+                            <input type="text" name="code" class="form-control" placeholder="AST-001" 
+                                   value="{{ asset.code if asset else '' }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Jumlah (Qty)</label>
+                            <input type="number" name="quantity" class="form-control" 
+                                   value="{{ asset.quantity if asset else '1' }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nama Aset</label>
+                        <input type="text" name="name" class="form-control" placeholder="Contoh: Laptop Dell Latitude" 
+                               value="{{ asset.name if asset else '' }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Lokasi</label>
+                            <input type="text" name="location" class="form-control" placeholder="Kantor Pusat / Lt. 2" 
+                                   value="{{ asset.location if asset else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estimasi Nilai (Rp)</label>
+                            <input type="number" name="estimated_value" class="form-control" step="0.01"
+                                   value="{{ asset.estimated_value if asset else '0' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Keterangan / Deskripsi</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Spesifikasi atau kondisi aset...">{{ asset.description if asset else '' }}</textarea>
+                    </div>
+                    
+                    <div class="text-end">
+                        <a href="{{ url_for('assets_page') }}" class="btn btn-secondary me-2">Batal</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>{% if asset %}Update{% else %}Simpan{% endif %} Aset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light border-0" style="border-radius: 15px;">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle me-2 text-primary"></i>Manajemen Aset</h6>
+                <p class="small text-muted">
+                    Modul ini digunakan untuk mencatat aset fisik yang dimiliki yayasan. Pastikan kode aset unik agar tidak membingungkan saat pelaporan.
+                </p>
+                <hr>
+                <p class="small mb-0">Estimasi nilai membantu dalam memantau kekayaan non-kas yayasan.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

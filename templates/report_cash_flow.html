@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Laporan Arus Kas</h1>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 15px;">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Keterangan</th>
+                    <th class="text-end pe-4">Jumlah (Rp)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                {% if row.Keterangan %}
+                <tr class="{% if 'Total' in row.Keterangan or 'KENAIKAN' in row.Keterangan %}fw-bold table-light{% elif not row['Jumlah (Rp)'] %}table-secondary fw-bold{% endif %}">
+                    <td class="ps-4">{{ row.Keterangan }}</td>
+                    <td class="text-end pe-4">
+                        {% if row['Jumlah (Rp)'] != "" %}
+                            {{ "{:,.0f}".format(row['Jumlah (Rp)']) }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr style="height: 10px;"><td colspan="2"></td></tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

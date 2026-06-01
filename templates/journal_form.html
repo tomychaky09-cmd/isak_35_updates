@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if journal_id %}Edit{% else %}Input{% endif %} Jurnal Umum</h1>
+</div>
+
+<form method="POST" id="journalForm">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Tanggal</label>
+                    <input type="date" name="date" class="form-control" value="{{ data.header.date if data else now }}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">No. Referensi</label>
+                    <input type="text" name="ref_no" class="form-control" placeholder="JU-001" value="{{ data.header.reference_no if data else '' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Keterangan</label>
+                    <input type="text" name="description" class="form-control" placeholder="Deskripsi transaksi" value="{{ data.header.description if data else '' }}" required>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Detail Transaksi</h5>
+            <button type="button" class="btn btn-sm btn-success" id="addRow">
+                <i class="fas fa-plus me-1"></i>Tambah Baris
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0" id="journalTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 35%;">Nama Akun</th>
+                            <th style="width: 20%;">Debit (Rp)</th>
+                            <th style="width: 20%;">Kredit (Rp)</th>
+                            <th style="width: 20%;">Aktivitas Arus Kas</th>
+                            <th style="width: 5%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="journalBody">
+                        {% if data and data.details %}
+                            {% for det in data.details %}
+                            <tr>
+                                <td>
+                                    <select name="account_id[]" class="form-select" required>
+                                        <option value="">Pilih Akun...</option>
+                                        {% for acc in accounts %}
+                                        <option value="{{ acc.id }}" {% if det.account_id and acc.id|int == det.account_id|int %}selected{% endif %}>{{ acc.code }} - {{ acc.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="debit[]" class="form-control debit-input" value="{{ det.debit }}" step="0.01"></td>
+                                <td><input type="number" name="credit[]" class="form-control credit-input" value="{{ det.credit }}" step="0.01"></td>
+                                <td>
+                                    <select name="cf_activity[]" class="form-select">
+                                        <option value="">None</option>
+                                        {% for cat in cf_cats %}
+                                        <option value="{{ cat.name }}" {% if det.cash_flow_activity == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td>
+                                    <select name="account_id[]" class="form-select" required>
+                                        <option value="">Pilih Akun...</option>
+                                        {% for acc in accounts %}
+                                        <option value="{{ acc.id }}">{{ acc.code }} - {{ acc.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="debit[]" class="form-control debit-input" value="0" step="0.01"></td>
+                                <td><input type="number" name="credit[]" class="form-control credit-input" value="0" step="0.01"></td>
+                                <td>
+                                    <select name="cf_activity[]" class="form-select">
+                                        <option value="">None</option>
+                                        {% for cat in cf_cats %}
+                                        <option value="{{ cat.name }}">{{ cat.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-row"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td class="text-end">Total:</td>
+                            <td id="totalDebit">0</td>
+                            <td id="totalCredit">0</td>
+                            <td colspan="2" id="balanceStatus" class="text-danger small">Tidak Seimbang</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-end mb-5">
+        <a href="{{ url_for('journals_page') }}" class="btn btn-secondary me-2">Batal</a>
+        <button type="submit" class="btn btn-primary px-5" id="submitBtn" disabled>
+            <i class="fas fa-save me-2"></i>{% if journal_id %}Update{% else %}Simpan{% endif %} Jurnal
+        </button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const journalBody = document.getElementById('journalBody');
+    const addRowBtn = document.getElementById('addRow');
+    const totalDebitEl = document.getElementById('totalDebit');
+    const totalCreditEl = document.getElementById('totalCredit');
+    const balanceStatusEl = document.getElementById('balanceStatus');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function calculateTotals() {
+        let totalDebit = 0;
+        let totalCredit = 0;
+        
+        document.querySelectorAll('.debit-input').forEach(input => {
+            totalDebit += parseFloat(input.value || 0);
+        });
+        
+        document.querySelectorAll('.credit-input').forEach(input => {
+            totalCredit += parseFloat(input.value || 0);
+        });
+
+        totalDebitEl.textContent = totalDebit.toLocaleString('id-ID');
+        totalCreditEl.textContent = totalCredit.toLocaleString('id-ID');
+
+        if (Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0) {
+            balanceStatusEl.textContent = 'Seimbang';
+            balanceStatusEl.className = 'text-success small';
+            submitBtn.disabled = false;
+        } else {
+            balanceStatusEl.textContent = 'Tidak Seimbang';
+            balanceStatusEl.className = 'text-danger small';
+            submitBtn.disabled = true;
+        }
+    }
+
+    addRowBtn.addEventListener('click', function() {
+        const firstRow = journalBody.querySelector('tr');
+        const newRow = firstRow.cloneNode(true);
+        newRow.querySelectorAll('input').forEach(input => input.value = '0');
+        newRow.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+        journalBody.appendChild(newRow);
+        attachRowListeners(newRow);
+    });
+
+    function attachRowListeners(row) {
+        row.querySelector('.remove-row').addEventListener('click', function() {
+            if (journalBody.querySelectorAll('tr').length > 1) {
+                row.remove();
+                calculateTotals();
+            }
+        });
+        row.querySelectorAll('.debit-input, .credit-input').forEach(input => {
+            input.addEventListener('input', calculateTotals);
+        });
+    }
+
+    document.querySelectorAll('#journalBody tr').forEach(row => {
+        attachRowListeners(row);
+    });
+    
+    calculateTotals();
+});
+</script>
+{% endblock %}

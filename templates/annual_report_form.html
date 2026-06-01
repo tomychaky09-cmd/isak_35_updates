@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Pengaturan Laporan Tahunan</h1>
+</div>
+
+<form action="{{ url_for('save_annual_report') }}" method="POST" class="needs-validation" novalidate>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Tahun Laporan</label>
+            <input type="number" name="year" class="form-control" value="{{ settings.year or now.split('-')[0] }}" required>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Visi</label>
+        <textarea name="vision" class="form-control" rows="3">{{ settings.vision }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Misi</label>
+        <textarea name="mission" class="form-control" rows="3">{{ settings.mission }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Ringkasan Program</label>
+        <textarea name="program_summary" class="form-control" rows="3">{{ settings.program_summary }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Program Pendidikan</label>
+        <textarea name="program_detail_edu" class="form-control" rows="3">{{ settings.program_detail_edu }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Program Sosial</label>
+        <textarea name="program_detail_social" class="form-control" rows="3">{{ settings.program_detail_social }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Struktur Organisasi</label>
+        <textarea name="organizational_structure" class="form-control" rows="3">{{ settings.organizational_structure }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Kendala Evaluasi</label>
+        <textarea name="evaluation_constraints" class="form-control" rows="3">{{ settings.evaluation_constraints }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Rencana Masa Depan</label>
+        <textarea name="future_plans" class="form-control" rows="3">{{ settings.future_plans }}</textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+</form>
+{% endblock %}

@@ -1,0 +1,6 @@
+@echo off
+echo Mengaktifkan Virtual Environment...
+call venv\Scripts\activate
+echo Menjalankan Aplikasi Web...
+python flask_app.py
+pause

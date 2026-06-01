@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Master Kategori Arus Kas</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">Tambah Kategori Baru</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_cf_cat') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Kategori</label>
+                        <input type="text" name="name" class="form-control" placeholder="Contoh: Penerimaan Wakaf" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jenis Aktivitas</label>
+                        <select name="main_category" class="form-select">
+                            <option value="ARUS KAS DARI AKTIVITAS OPERASI">Aktivitas Operasi</option>
+                            <option value="ARUS KAS DARI AKTIVITAS INVESTASI">Aktivitas Investasi</option>
+                            <option value="ARUS KAS DARI AKTIVITAS PENDANAAN">Aktivitas Pendanaan</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Simpan Kategori</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Kategori</th>
+                            <th>Aktivitas</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in cats %}
+                        <tr>
+                            <td>{{ c.name }}</td>
+                            <td><small class="text-muted">{{ c.main_category }}</small></td>
+                            <td class="text-center">
+                                <a href="{{ url_for('delete_cf_cat', name=c.name) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus?')"><i class="fas fa-trash"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
