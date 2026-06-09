@@ -5,8 +5,49 @@
     <h1 class="h2">Daftar Jurnal Umum</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <a href="{{ url_for('export_journals') }}" class="btn btn-sm btn-outline-success"><i class="fas fa-file-excel me-1"></i>Ekspor ke Excel</a>
+            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="fas fa-file-import me-1"></i>Impor dari Excel
+            </button>
+            <a href="{{ url_for('export_journals') }}" class="btn btn-sm btn-outline-info"><i class="fas fa-file-excel me-1"></i>Ekspor</a>
             <a href="{{ url_for('add_journal') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Tambah Jurnal</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Impor -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('import_journals') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Impor Jurnal dari Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Satu jurnal dapat terdiri dari banyak baris. Pastikan <strong>No Ref</strong> sama untuk baris-baris dalam satu jurnal.</p>
+                    <div class="mb-3">
+                        <a href="{{ url_for('download_template_journal') }}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-file-download me-1"></i>Unduh Template Excel (.xlsx)
+                        </a>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label">Pilih File (.xlsx) yang sudah diisi</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                    </div>
+                    <div class="alert alert-warning py-2 small">
+                        <strong>Penting:</strong> 
+                        <ul class="mb-0">
+                            <li>Total Debit harus sama dengan Total Kredit per No Ref.</li>
+                            <li>Kode Akun harus sudah terdaftar di COA.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Mulai Impor</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

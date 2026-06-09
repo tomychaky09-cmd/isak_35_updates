@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side
-from fpdf import FPDF
+from src.pdf_report_lab import AnnualReportPDF
 
 class ReportGenerator:
     def __init__(self, db_manager):
@@ -199,59 +199,56 @@ class ReportGenerator:
         try:
             settings = self.db.get_annual_report_settings(year)
             profile = self.db.get_foundation_profile()
+            pos = self.get_isak35_financial_position()
+            act = self.get_statement_of_activities()
+            cf = self.get_cash_flow_report()
+            
             if not settings: return False
             
-            pdf = FPDF()
-            pdf.add_page()
+            # Logika Struktur Organisasi Fleksibel
+            org_structure_raw = settings.get('organizational_structure', '')
+            organization = []
             
-            # Judul
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, f"Laporan Tahunan {year}", ln=True, align='C')
-            pdf.ln(10)
+            # Parsing jika ada format "Jabatan: Nama" per baris
+            if org_structure_raw and ':' in org_structure_raw:
+                lines = [l.strip() for l in org_structure_raw.replace('\r\n', '\n').split('\n') if ':' in l]
+                for line in lines:
+                    parts = line.split(':', 1)
+                    organization.append({"position": parts[0].strip(), "name": parts[1].strip()})
             
-            # Isi Laporan
-            pdf.set_font("Arial", '', 12)
-            sections = [
-                ("Visi", settings.get('vision', '')),
-                ("Misi", settings.get('mission', '')),
-                ("Ringkasan Program", settings.get('program_summary', '')),
-                ("Program Pendidikan", settings.get('program_detail_edu', '')),
-                ("Program Sosial", settings.get('program_detail_social', '')),
-                ("Struktur Organisasi", settings.get('organizational_structure', '')),
-                ("Kendala Evaluasi", settings.get('evaluation_constraints', '')),
-                ("Rencana Masa Depan", settings.get('future_plans', ''))
-            ]
+            if not organization:
+                organization = [
+                    {"position": "Ketua Pembina", "name": profile.get('pembina_name') or '...................'},
+                    {"position": "Ketua Pengawas", "name": profile.get('pengawas_name') or '...................'},
+                    {"position": "Ketua Pengurus", "name": profile.get('leader_name') or '...................'},
+                    {"position": "Bendahara", "name": "..................."}
+                ]
+
+            # Format data untuk AnnualReportPDF
+            data = {
+                "profile": {
+                    "name": profile.get('name', 'YAYASAN'),
+                    "address": profile.get('address', '-'),
+                    "year": str(year),
+                    "vision": settings.get('vision', '-'),
+                    "mission": settings.get('mission', '')
+                },
+                "organization": organization,
+                "performance": settings.get('program_summary', ''),
+                "program_edu": settings.get('program_detail_edu', ''),
+                "program_social": settings.get('program_detail_social', ''),
+                "financials": {
+                    "position": pos,
+                    "activities": act,
+                    "cash_flow": cf.get('report_data', [])
+                },
+                "evaluation": settings.get('evaluation_constraints', ''),
+                "future_plans": settings.get('future_plans', '')
+            }
             
-            for title, content in sections:
-                pdf.set_font("Arial", 'B', 12)
-                pdf.cell(0, 10, title, ln=True)
-                pdf.set_font("Arial", '', 11)
-                pdf.multi_cell(0, 7, str(content))
-                pdf.ln(5)
-                
-            # Halaman Pengesahan (Halaman Terpisah)
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, "LEMBAR PENGESAHAN", ln=True, align='C')
-            pdf.ln(20)
-            
-            # Tanda Tangan
-            pdf.set_font("Arial", '', 12)
-            y_pos = pdf.get_y()
-            
-            # Kiri: Pengurus / Pimpinan
-            pdf.cell(95, 10, "Disusun oleh,", ln=False, align='C')
-            # Kanan: Pembina
-            pdf.cell(95, 10, "Disahkan oleh,", ln=True, align='C')
-            pdf.ln(30)
-            
-            pdf.cell(95, 10, profile.get('leader_name', '...................'), ln=False, align='C')
-            pdf.cell(95, 10, profile.get('pembina_name', '...................'), ln=True, align='C')
-            pdf.cell(95, 10, "Pimpinan Yayasan", ln=False, align='C')
-            pdf.cell(95, 10, "Pembina Yayasan", ln=True, align='C')
-            
-            pdf.output(file_path)
-            return True
+            pdf_gen = AnnualReportPDF(data)
+            return pdf_gen.generate(file_path)
         except Exception as e:
-            print(f"PDF Error: {e}")
+            print(f"ReportLab PDF Error: {e}")
             return False
+

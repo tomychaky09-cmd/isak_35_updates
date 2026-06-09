@@ -244,15 +244,24 @@ class DatabaseManager:
 
     # --- ANNUAL REPORT ---
     def get_annual_report_settings(self, year):
-        res = self._execute_query("SELECT * FROM annual_report_settings WHERE year=?", (year,), fetch=True)
-        if not res: return None
-        cols = ['year', 'vision', 'mission', 'program_summary', 'program_detail_edu', 'program_detail_social', 'organizational_structure', 'evaluation_constraints', 'future_plans', 'pembina_name', 'pengawas_name', 'logo_path']
-        return dict(zip(cols, res[0]))
+        conn = self.get_connection(); cursor = conn.cursor()
+        cursor.execute("SELECT * FROM annual_report_settings WHERE year=?", (year,))
+        row = cursor.fetchone(); conn.close()
+        if not row: return None
+        
+        # Ambil nama kolom secara dinamis untuk menghindari NameError/IndexError
+        conn = self.get_connection(); cursor = conn.cursor()
+        if self.db_type == "mysql":
+            cursor.execute("SHOW COLUMNS FROM annual_report_settings"); cols = [c[0] for c in cursor.fetchall()]
+        else:
+            cursor.execute("PRAGMA table_info(annual_report_settings)"); cols = [c[1] for c in cursor.fetchall()]
+        conn.close()
+        
+        return dict(zip(cols, row))
 
     def save_annual_report_settings(self, year, data):
         conn = self.get_connection(); cursor = conn.cursor()
         try:
-            # Check if exists
             cursor.execute("SELECT year FROM annual_report_settings WHERE year=?", (year,))
             if cursor.fetchone():
                 q = "UPDATE annual_report_settings SET vision=?, mission=?, program_summary=?, program_detail_edu=?, program_detail_social=?, organizational_structure=?, evaluation_constraints=?, future_plans=? WHERE year=?"

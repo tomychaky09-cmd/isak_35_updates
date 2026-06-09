@@ -9,7 +9,9 @@ instance/
 .vscode/
 .idea/
 database/*.db
-!database/foundation_finance.db
+temp_repo/
+*.log
+*.tmp
 
 # Junk/Backup Folders
 desktop_app/
@@ -19,3 +21,4 @@ deploy_*/
 *.zip
 *.txt
 *.xlsx
+*.pdf

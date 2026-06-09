@@ -79,35 +79,51 @@
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
                     <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link {% if '/coa' in request.path %}active{% endif %}" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun</a></li>
+                    
+                    <hr class="mx-3 border-secondary opacity-25">
+                    
+                    <!-- DATA MASTER -->
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="collapse" href="#masterMenu">
+                            <i class="fas fa-database me-2"></i>Data Master <i class="fas fa-chevron-down ms-1 small"></i>
+                        </a>
+                        <div class="collapse {% if '/coa' in request.path or '/assets' in request.path or '/donors' in request.path or '/cash-flow-cats' in request.path %}show{% endif %} ps-3" id="masterMenu">
+                            <ul class="nav flex-column">
+                                <li><a class="nav-link py-1 small {% if '/coa' in request.path %}active{% endif %}" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun (COA)</a></li>
+                                <li><a class="nav-link py-1 small {% if '/cash-flow-cats' in request.path %}active{% endif %}" href="{{ url_for('cf_cats_page') }}"><i class="fas fa-tags me-2"></i>Kategori Arus Kas</a></li>
+                                <li><a class="nav-link py-1 small {% if '/assets' in request.path %}active{% endif %}" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>
+                                <li><a class="nav-link py-1 small {% if '/donors' in request.path %}active{% endif %}" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <hr class="mx-3 border-secondary opacity-25">
+
+                    <!-- TRANSAKSI -->
                     <li class="nav-item">
                         <div class="d-flex align-items-center justify-content-between pe-2">
                             <a class="nav-link flex-grow-1 {% if '/journals' in request.path %}active{% endif %}" href="{{ url_for('journals_page') }}"><i class="fas fa-book me-2"></i>Jurnal Umum</a>
                             <a href="{{ url_for('add_journal') }}" class="text-white-50 p-1" title="Tambah Jurnal"><i class="fas fa-plus-circle"></i></a>
                         </div>
                     </li>
-                    <li class="nav-item"><a class="nav-link {% if '/assets' in request.path %}active{% endif %}" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>
-                    <li class="nav-item">
-                        <div class="d-flex align-items-center justify-content-between pe-2">
-                            <a class="nav-link flex-grow-1 {% if '/donors' in request.path %}active{% endif %}" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a>
-                            <a href="{{ url_for('add_donor') }}" class="text-white-50 p-1" title="Tambah Donatur"><i class="fas fa-plus-circle"></i></a>
-                        </div>
-                    </li>
                     <li class="nav-item"><a class="nav-link {% if '/ledger' in request.path %}active{% endif %}" href="{{ url_for('ledger_page') }}"><i class="fas fa-book-open me-2"></i>Buku Besar</a></li>
                     <li class="nav-item"><a class="nav-link {% if '/trial-balance' in request.path %}active{% endif %}" href="{{ url_for('trial_balance') }}"><i class="fas fa-scale-balanced me-2"></i>Neraca Saldo</a></li>
+                    
                     <hr class="mx-3 border-secondary opacity-25">
+                    
+                    <!-- LAPORAN -->
                     <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="collapse" href="#reportMenu"><i class="fas fa-file-invoice-dollar me-2"></i>Laporan Keuangan <i class="fas fa-chevron-down ms-1 small"></i></a>
-                        <div class="collapse show ps-3" id="reportMenu">
+                        <div class="collapse {% if '/report-' in request.path or '/annual-report' in request.path %}show{% endif %} ps-3" id="reportMenu">
                             <ul class="nav flex-column">
                                 <li><a class="nav-link py-1 small" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>
                                 <li><a class="nav-link py-1 small" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>
                                 <li><a class="nav-link py-1 small" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>
-                                <li><a class="nav-link py-1 small" href="{{ url_for('cf_cats_page') }}">Kategori Arus Kas</a></li>
                                 <li><a class="nav-link py-1 small" href="{{ url_for('annual_report_page') }}">Laporan Tahunan</a></li>
                             </ul>
                         </div>
                     </li>
+
                     <li class="nav-item mt-auto">
                         <a class="nav-link text-danger {% if '/reset' in request.path %}active{% endif %}" href="{{ url_for('reset_data_page') }}">
                             <i class="fas fa-trash-alt me-2"></i>Reset Data

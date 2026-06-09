@@ -3,6 +3,45 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Master Kategori Arus Kas</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-file-import me-1"></i>Impor dari Excel
+        </button>
+    </div>
+</div>
+
+<!-- Modal Impor -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('import_cf_cats') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Impor Kategori dari Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Gunakan template Excel standar untuk memastikan data terimpor dengan benar.</p>
+                    <div class="mb-3">
+                        <a href="{{ url_for('download_template_cf_cats') }}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-file-download me-1"></i>Unduh Template Excel (.xlsx)
+                        </a>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label">Pilih File (.xlsx) yang sudah diisi</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                    </div>
+                    <div class="alert alert-info py-2 small">
+                        <strong>Tips:</strong> Nama Kategori harus unik. Kategori Utama harus berisi salah satu: Operasi, Investasi, atau Pendanaan.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Mulai Impor</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="row">

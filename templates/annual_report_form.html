@@ -5,46 +5,76 @@
     <h1 class="h2">Pengaturan Laporan Tahunan</h1>
 </div>
 
-<form action="{{ url_for('save_annual_report') }}" method="POST" class="needs-validation" novalidate>
+<div class="alert alert-info py-2 small">
+    <i class="fas fa-info-circle me-1"></i> Data laporan keuangan (Posisi Keuangan, Aktivitas, Arus Kas) akan ditarik otomatis dari database untuk tahun yang dipilih.
+</div>
+
+<form action="{{ url_for('save_annual_report') }}" method="POST" class="card shadow-sm border-0 p-4" style="border-radius: 15px;">
     <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Tahun Laporan</label>
+        <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">Tahun Laporan</label>
             <input type="number" name="year" class="form-control" value="{{ settings.year or now.split('-')[0] }}" required>
+            <div class="form-text small">Masukkan tahun laporan (misal: 2026).</div>
         </div>
     </div>
+    
+    <hr class="my-4">
+    
+    <h5 class="mb-3 text-primary"><i class="fas fa-bullseye me-2"></i>I. Visi & Misi</h5>
     <div class="mb-3">
-        <label class="form-label">Visi</label>
-        <textarea name="vision" class="form-control" rows="3">{{ settings.vision }}</textarea>
+        <label class="form-label">Visi Yayasan</label>
+        <textarea name="vision" class="form-control" rows="2" placeholder="Contoh: Menjadi yayasan pendidikan yang unggul dalam mencetak generasi Qur'ani...">{{ settings.vision }}</textarea>
     </div>
     <div class="mb-3">
-        <label class="form-label">Misi</label>
-        <textarea name="mission" class="form-control" rows="3">{{ settings.mission }}</textarea>
+        <label class="form-label">Misi Yayasan (Gunakan baris baru untuk setiap poin)</label>
+        <textarea name="mission" class="form-control" rows="4" placeholder="Contoh:&#10;1. Menyelenggarakan pendidikan berkualitas...&#10;2. Memberdayakan ekonomi umat...&#10;3. Melakukan aksi kemanusiaan...">{{ settings.mission }}</textarea>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3 text-primary"><i class="fas fa-chart-line me-2"></i>II. Kinerja Program</h5>
+    <div class="mb-3">
+        <label class="form-label">Ringkasan Pencapaian Umum</label>
+        <textarea name="program_summary" class="form-control" rows="3" placeholder="Sampaikan pencapaian utama yayasan selama setahun terakhir secara ringkas.">{{ settings.program_summary }}</textarea>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Detail Bidang Pendidikan</label>
+            <textarea name="program_detail_edu" class="form-control" rows="3" placeholder="Contoh: Peningkatan jumlah siswa, renovasi kelas, pengembangan kurikulum...">{{ settings.program_detail_edu }}</textarea>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Detail Bidang Sosial/Keagamaan</label>
+            <textarea name="program_detail_social" class="form-control" rows="3" placeholder="Contoh: Pembagian sembako, santunan yatim, pengajian rutin...">{{ settings.program_detail_social }}</textarea>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3 text-primary"><i class="fas fa-users me-2"></i>III. Manajemen & SDM</h5>
+    <div class="mb-3">
+        <label class="form-label">Struktur Organisasi (Info tambahan)</label>
+        <textarea name="organizational_structure" class="form-control" rows="2" placeholder="Contoh: Terdapat penambahan pengurus baru di bidang IT untuk digitalisasi yayasan.">{{ settings.organizational_structure }}</textarea>
+    </div>
+
+    <hr class="my-4">
+
+    <h5 class="mb-3 text-primary"><i class="fas fa-clipboard-check me-2"></i>IV. Evaluasi & Rencana Masa Depan</h5>
+    <div class="mb-3">
+        <label class="form-label">Kendala & Evaluasi (Gunakan baris baru untuk setiap poin)</label>
+        <textarea name="evaluation_constraints" class="form-control" rows="3" placeholder="Contoh:&#10;1. Kurangnya tenaga pengajar bahasa Arab.&#10;2. Fasilitas gedung yang butuh pengecatan ulang.">{{ settings.evaluation_constraints }}</textarea>
     </div>
     <div class="mb-3">
-        <label class="form-label">Ringkasan Program</label>
-        <textarea name="program_summary" class="form-control" rows="3">{{ settings.program_summary }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Program Pendidikan</label>
-        <textarea name="program_detail_edu" class="form-control" rows="3">{{ settings.program_detail_edu }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Program Sosial</label>
-        <textarea name="program_detail_social" class="form-control" rows="3">{{ settings.program_detail_social }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Struktur Organisasi</label>
-        <textarea name="organizational_structure" class="form-control" rows="3">{{ settings.organizational_structure }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Kendala Evaluasi</label>
-        <textarea name="evaluation_constraints" class="form-control" rows="3">{{ settings.evaluation_constraints }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Rencana Masa Depan</label>
-        <textarea name="future_plans" class="form-control" rows="3">{{ settings.future_plans }}</textarea>
+        <label class="form-label">Rencana Tahun Depan (Gunakan baris baru untuk setiap poin)</label>
+        <textarea name="future_plans" class="form-control" rows="3" placeholder="Contoh:&#10;1. Pembangunan perpustakaan digital.&#10;2. Sertifikasi kompetensi seluruh guru.">{{ settings.future_plans }}</textarea>
     </div>
     
-    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+    <div class="d-flex gap-2 mt-4 pt-3 border-top">
+        <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i>Simpan Perubahan</button>
+        {% if settings.year %}
+        <a href="{{ url_for('download_annual_report_pdf', year=settings.year) }}" class="btn btn-success px-4"><i class="fas fa-file-pdf me-2"></i>Unduh Laporan PDF</a>
+        {% endif %}
+    </div>
 </form>
+
+<div class="mb-5"></div>
 {% endblock %}

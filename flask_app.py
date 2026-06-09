@@ -2,15 +2,60 @@ from flask import Flask, render_template, jsonify, request, session, redirect, u
 from src.database_manager import DatabaseManager
 from src.report_generator import ReportGenerator
 import os
+import io
 from functools import wraps
 from datetime import datetime
 import tempfile
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 
 app = Flask(__name__, 
             template_folder='templates',
             static_folder='static')
 app.secret_key = 'isak35_secret_key'
+
+# --- BASIC HELPERS & DECORATORS ---
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session: return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def to_dict_list(data, schema):
+    if not data: return []
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+        return data
+    return [dict(zip(schema, row)) for row in data]
+
+# --- HELPERS UNTUK EXCEL TEMPLATE ---
+def create_excel_template(filename, headers, sheet_name="Template"):
+    output = io.BytesIO()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = sheet_name
+    ws.append(headers)
+    # Atur lebar kolom sedikit lebih luas
+    for i in range(1, len(headers) + 1):
+        ws.column_dimensions[chr(64 + i)].width = 20
+    wb.save(output)
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@app.route('/download-template/journal')
+@login_required
+def download_template_journal():
+    return create_excel_template('template_jurnal.xlsx', ['Tanggal (YYYY-MM-DD)', 'No Ref', 'Keterangan', 'Kode Akun', 'Debit', 'Kredit', 'Arus Kas (Opsional)'], "Jurnal")
+
+# --- ROUTES TEMPLATE ---
+@app.route('/download-template/coa')
+@login_required
+def download_template_coa():
+    return create_excel_template('template_coa.xlsx', ['Kode', 'Nama Akun', 'Tipe', 'Kategori', 'Catatan'], "COA")
+
+@app.route('/download-template/cf-cats')
+@login_required
+def download_template_cf_cats():
+    return create_excel_template('template_kategori_arus_kas.xlsx', ['Nama Kategori', 'Kategori Utama'], "CashFlowCats")
 
 # Inisialisasi Database
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,20 +66,6 @@ if not os.path.exists(os.path.dirname(db_path)):
 db = DatabaseManager(db_path)
 rg = ReportGenerator(db)
 SYNC_TOKEN = "ISAK35_Qudwah_Sync_2026"
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user' not in session: return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# Helper for converting database tuples to dicts
-def to_dict_list(data, schema):
-    if not data: return []
-    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-        return data
-    return [dict(zip(schema, row)) for row in data]
 
 @app.context_processor
 def inject_db_info():
@@ -143,22 +174,27 @@ def import_coa():
             ws = wb.active
             
             imported_count = 0
+            failed_count = 0
             # Lewati header (baris 1)
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if not row[0]: continue # Lewati baris kosong
-                
-                code = str(row[0])
-                name = str(row[1])
-                acc_type = str(row[2])
-                category = str(row[3]) if row[3] else ""
-                notes = str(row[4]) if row[4] else ""
-                
-                # Gunakan add_account (otomatis handle jika sudah ada via UNIQUE constraint di DB jika perlu, 
-                # atau kita biarkan logic standar berjalan)
-                db.add_account(code, name, acc_type, category, notes)
-                imported_count += 1
+                try:
+                    code = str(row[0])
+                    name = str(row[1])
+                    acc_type = str(row[2])
+                    category = str(row[3]) if row[3] else ""
+                    notes = str(row[4]) if row[4] else ""
+                    
+                    if db.add_account(code, name, acc_type, category, notes):
+                        imported_count += 1
+                    else:
+                        failed_count += 1
+                except:
+                    failed_count += 1
             
-            flash(f'Berhasil mengimpor {imported_count} akun!', 'success')
+            msg = f'Berhasil mengimpor {imported_count} akun!'
+            if failed_count > 0: msg += f' ({failed_count} baris gagal/sudah ada)'
+            flash(msg, 'success' if failed_count == 0 else 'warning')
         except Exception as e:
             flash(f'Gagal mengimpor: {str(e)}', 'danger')
     else:
@@ -237,6 +273,72 @@ def export_journals():
     if rg.export_journals_to_excel(file_path):
         return send_file(file_path, as_attachment=True, download_name=f"Daftar_Jurnal_{datetime.now().strftime('%Y%m%d')}.xlsx")
     flash("Gagal mengekspor jurnal", "danger")
+    return redirect(url_for('journals_page'))
+
+@app.route('/journals/import', methods=['POST'])
+@login_required
+def import_journals():
+    if 'file' not in request.files:
+        flash('Tidak ada file dipilih', 'danger')
+        return redirect(url_for('journals_page'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('Nama file kosong', 'danger')
+        return redirect(url_for('journals_page'))
+
+    if file and file.filename.endswith('.xlsx'):
+        try:
+            wb = load_workbook(file, data_only=True)
+            ws = wb.active
+            
+            # Map kode akun ke ID
+            acc_map = {str(a['code']): a['id'] for a in to_dict_list(db.get_accounts(), ['id', 'code'])}
+            
+            journal_groups = {} # Key: RefNo
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[1]: continue # Butuh RefNo
+                
+                date_val = str(row[0])[:10] if row[0] else datetime.now().strftime('%Y-%m-%d')
+                ref = str(row[1])
+                desc = str(row[2]) if row[2] else ""
+                acc_code = str(row[3])
+                debit = float(row[4] or 0)
+                credit = float(row[5] or 0)
+                cf = str(row[6]) if row[6] else None
+                
+                if acc_code not in acc_map:
+                    flash(f'Gagal: Kode Akun {acc_code} tidak ditemukan!', 'danger')
+                    return redirect(url_for('journals_page'))
+                
+                if ref not in journal_groups:
+                    journal_groups[ref] = {'date': date_val, 'desc': desc, 'details': []}
+                
+                journal_groups[ref]['details'].append({
+                    'account_id': acc_map[acc_code],
+                    'debit': debit,
+                    'credit': credit,
+                    'cash_flow_activity': cf
+                })
+            
+            imported_count = 0
+            for ref, data in journal_groups.items():
+                # Validasi Balance
+                total_debit = sum(d['debit'] for d in data['details'])
+                total_credit = sum(d['credit'] for d in data['details'])
+                
+                if abs(total_debit - total_credit) > 0.01:
+                    flash(f'Gagal: Jurnal {ref} tidak balance! (D: {total_debit}, C: {total_credit})', 'danger')
+                    continue
+                
+                if db.add_journal_entry(data['date'], data['desc'], ref, data['details']):
+                    imported_count += 1
+            
+            flash(f'Berhasil mengimpor {imported_count} jurnal!', 'success')
+        except Exception as e:
+            flash(f'Gagal mengimpor: {str(e)}', 'danger')
+    else:
+        flash('Format file harus .xlsx', 'danger')
     return redirect(url_for('journals_page'))
 
 # --- ASSETS ---
@@ -341,6 +443,51 @@ def add_cf_cat():
 def delete_cf_cat(name):
     db.delete_cash_flow_category(name)
     flash('Kategori dihapus', 'success')
+    return redirect(url_for('cf_cats_page'))
+
+@app.route('/cash-flow-cats/import', methods=['POST'])
+@login_required
+def import_cf_cats():
+    if 'file' not in request.files:
+        flash('Tidak ada file dipilih', 'danger')
+        return redirect(url_for('cf_cats_page'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('Nama file kosong', 'danger')
+        return redirect(url_for('cf_cats_page'))
+
+    if file and file.filename.endswith('.xlsx'):
+        try:
+            wb = load_workbook(file, data_only=True)
+            ws = wb.active
+            imported_count = 0
+            failed_count = 0
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0]: continue
+                try:
+                    name = str(row[0])
+                    main_cat_raw = str(row[1]).upper() if row[1] else "OPERASI"
+                    
+                    # Normalisasi kategori utama
+                    main_cat = "ARUS KAS DARI AKTIVITAS OPERASI"
+                    if "INVESTASI" in main_cat_raw: main_cat = "ARUS KAS DARI AKTIVITAS INVESTASI"
+                    elif "PENDANAAN" in main_cat_raw: main_cat = "ARUS KAS DARI AKTIVITAS PENDANAAN"
+                    
+                    if db.add_cash_flow_category(name, main_cat):
+                        imported_count += 1
+                    else:
+                        failed_count += 1
+                except:
+                    failed_count += 1
+            
+            msg = f'Berhasil mengimpor {imported_count} kategori!'
+            if failed_count > 0: msg += f' ({failed_count} baris gagal/sudah ada)'
+            flash(msg, 'success' if failed_count == 0 else 'warning')
+        except Exception as e:
+            flash(f'Gagal mengimpor: {str(e)}', 'danger')
+    else:
+        flash('Format file harus .xlsx', 'danger')
     return redirect(url_for('cf_cats_page'))
 
 # --- REPORTS ---
