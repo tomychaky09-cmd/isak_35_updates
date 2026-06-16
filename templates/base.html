@@ -36,25 +36,59 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Navigasi HP (Hanya muncul di layar kecil) -->
             <ul class="navbar-nav d-lg-none mt-3 border-top pt-2">
-                {% if perms.get('dashboard') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>{% endif %}
-                {% if perms.get('coa_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun</a></li>{% endif %}
-                {% if perms.get('journals_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('journals_page') }}"><i class="fas fa-book me-2"></i>Jurnal Umum</a></li>{% endif %}
-                {% if perms.get('ledger_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('ledger_page') }}"><i class="fas fa-book-open me-2"></i>Buku Besar</a></li>{% endif %}
-                {% if perms.get('trial_balance') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('trial_balance') }}"><i class="fas fa-scale-balanced me-2"></i>Neraca Saldo</a></li>{% endif %}
-                {% if perms.get('assets_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>{% endif %}
-                {% if perms.get('donors_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>{% endif %}
-                
-                {% if perms.get('report_activities') or perms.get('report_position') or perms.get('report_net_assets') or perms.get('report_cash_flow') %}
+                {% if perms.get('dashboard') %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                {% endif %}
+
+                <!-- DATA MASTER (HP) -->
+                {% if perms.get('coa_page') or perms.get('cf_cats_page') or perms.get('assets_page') or perms.get('donors_page') %}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Laporan ISAK 35</a>
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="fas fa-database me-2"></i>Data Master</a>
+                    <ul class="dropdown-menu">
+                        {% if perms.get('coa_page') %}<li><a class="dropdown-item" href="{{ url_for('coa_page') }}">Daftar Akun (COA)</a></li>{% endif %}
+                        {% if perms.get('cf_cats_page') %}<li><a class="dropdown-item" href="{{ url_for('cf_cats_page') }}">Kategori Arus Kas</a></li>{% endif %}
+                        {% if perms.get('assets_page') %}<li><a class="dropdown-item" href="{{ url_for('assets_page') }}">Inventaris Aset</a></li>{% endif %}
+                        {% if perms.get('donors_page') %}<li><a class="dropdown-item" href="{{ url_for('donors_page') }}">Donatur</a></li>{% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+                <!-- TRANSAKSI (HP) -->
+                {% if perms.get('journals_page') or perms.get('ledger_page') or perms.get('trial_balance') %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="fas fa-exchange-alt me-2"></i>Transaksi</a>
+                    <ul class="dropdown-menu">
+                        {% if perms.get('journals_page') %}<li><a class="dropdown-item" href="{{ url_for('journals_page') }}">Jurnal Umum</a></li>{% endif %}
+                        {% if perms.get('ledger_page') %}<li><a class="dropdown-item" href="{{ url_for('ledger_page') }}">Buku Besar</a></li>{% endif %}
+                        {% if perms.get('trial_balance') %}<li><a class="dropdown-item" href="{{ url_for('trial_balance') }}">Neraca Saldo</a></li>{% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+                
+                <!-- LAPORAN (HP) -->
+                {% if perms.get('report_activities') or perms.get('report_position') or perms.get('report_net_assets') or perms.get('report_cash_flow') or perms.get('annual_report_page') %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="fas fa-file-invoice-dollar me-2"></i>Laporan Keuangan</a>
                     <ul class="dropdown-menu">
                         {% if perms.get('report_activities') %}<li><a class="dropdown-item" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>{% endif %}
                         {% if perms.get('report_position') %}<li><a class="dropdown-item" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>{% endif %}
                         {% if perms.get('report_net_assets') %}<li><a class="dropdown-item" href="{{ url_for('report_net_assets') }}">Lap. Perubahan Aset Neto</a></li>{% endif %}
                         {% if perms.get('report_cash_flow') %}<li><a class="dropdown-item" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>{% endif %}
+                        {% if perms.get('annual_report_page') %}<li><a class="dropdown-item" href="{{ url_for('annual_report_page') }}">Laporan Tahunan</a></li>{% endif %}
                     </ul>
                 </li>
+                {% endif %}
+
+                <!-- SISTEM (HP) -->
+                {% if user_role == 'super_admin' %}
+                <li class="nav-item"><a class="nav-link text-warning" href="{{ url_for('super_admin_panel') }}"><i class="fas fa-shield-alt me-2"></i>Panel Super Admin</a></li>
+                <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('reset_data_page') }}"><i class="fas fa-trash-alt me-2"></i>Reset Data</a></li>
+                {% endif %}
+
+                {% if perms.get('export_excel') or user_role == 'super_admin' %}
+                <li class="nav-item mt-2"><a class="btn btn-sm btn-info w-100 text-white" href="{{ url_for('export_excel') }}"><i class="fas fa-file-excel me-1"></i>Ekspor Laporan</a></li>
                 {% endif %}
             </ul>
 
