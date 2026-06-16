@@ -45,12 +45,13 @@
                 {% if perms.get('assets_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>{% endif %}
                 {% if perms.get('donors_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>{% endif %}
                 
-                {% if perms.get('report_activities') or perms.get('report_position') or perms.get('report_cash_flow') %}
+                {% if perms.get('report_activities') or perms.get('report_position') or perms.get('report_net_assets') or perms.get('report_cash_flow') %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Laporan ISAK 35</a>
                     <ul class="dropdown-menu">
                         {% if perms.get('report_activities') %}<li><a class="dropdown-item" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>{% endif %}
                         {% if perms.get('report_position') %}<li><a class="dropdown-item" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>{% endif %}
+                        {% if perms.get('report_net_assets') %}<li><a class="dropdown-item" href="{{ url_for('report_net_assets') }}">Lap. Perubahan Aset Neto</a></li>{% endif %}
                         {% if perms.get('report_cash_flow') %}<li><a class="dropdown-item" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>{% endif %}
                     </ul>
                 </li>
