@@ -69,16 +69,86 @@ SYNC_TOKEN = "ISAK35_Qudwah_Sync_2026"
 
 @app.context_processor
 def inject_db_info():
-    return dict(db_type=db.db_type, now=datetime.now().strftime('%Y-%m-%d'))
+    user_perms = {}
+    if 'user' in session:
+        user_perms = db.get_permissions_dict(session['user']['role'])
+    return dict(
+        db_type=db.db_type, 
+        now=datetime.now().strftime('%Y-%m-%d'),
+        perms=user_perms,
+        user_role=session['user']['role'] if 'user' in session else None
+    )
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         u = request.form.get('username'); p = request.form.get('password')
         user = db.verify_login(u, p)
-        if user: session['user'] = user; return redirect(url_for('dashboard'))
+        if user: 
+            session['user'] = user
+            return redirect(url_for('dashboard'))
         flash('Username/Password salah!', 'danger')
     return render_template('login.html')
+
+# --- SUPER ADMIN PANEL ---
+@app.route('/super-admin')
+@login_required
+def super_admin_panel():
+    if session['user']['role'] != 'super_admin':
+        return redirect(url_for('dashboard'))
+    
+    users = to_dict_list(db.get_users(), ['id', 'username', 'role'])
+    roles = ['admin', 'pembina', 'bendahara', 'ketua', 'pengawas']
+    pages = to_dict_list(db.get_app_pages(), ['id', 'name', 'route_name', 'category'])
+    
+    # Ambil matriks izin
+    matrix = {}
+    for r in roles:
+        matrix[r] = {p['id']: False for p in pages}
+        perms = db.get_role_permissions(r)
+        for p_id, p_name, p_cat, is_allowed in perms:
+            matrix[r][p_id] = True if is_allowed == 1 else False
+
+    return render_template('super_admin_panel.html', users=users, roles=roles, pages=pages, matrix=matrix)
+
+@app.route('/super-admin/toggle-permission', methods=['POST'])
+@login_required
+def toggle_permission():
+    if session['user']['role'] != 'super_admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    data = request.json
+    role = data.get('role')
+    page_id = int(data.get('page_id')) # Konversi ke integer
+    is_allowed = 1 if data.get('is_allowed') else 0
+    
+    success = db.update_role_permission(role, page_id, is_allowed)
+    return jsonify({'success': success})
+
+@app.route('/super-admin/user/add', methods=['POST'])
+@login_required
+def add_user():
+    if session['user']['role'] != 'super_admin': return redirect(url_for('dashboard'))
+    u = request.form.get('username'); p = request.form.get('password'); r = request.form.get('role')
+    if db.add_user(u, p, r): flash('User berhasil ditambahkan', 'success')
+    else: flash('Gagal menambah user', 'danger')
+    return redirect(url_for('super_admin_panel'))
+
+@app.route('/super-admin/user/edit/<int:uid>', methods=['POST'])
+@login_required
+def edit_user(uid):
+    if session['user']['role'] != 'super_admin': return redirect(url_for('dashboard'))
+    u = request.form.get('username'); p = request.form.get('password'); r = request.form.get('role')
+    if db.update_user(uid, u, p, r): flash('User berhasil diperbarui', 'success')
+    else: flash('Gagal memperbarui user', 'danger')
+    return redirect(url_for('super_admin_panel'))
+
+@app.route('/super-admin/user/delete/<int:uid>')
+@login_required
+def delete_user(uid):
+    if session['user']['role'] != 'super_admin': return redirect(url_for('dashboard'))
+    if db.delete_user(uid): flash('User berhasil dihapus', 'success')
+    return redirect(url_for('super_admin_panel'))
 
 @app.route('/logout')
 def logout():
@@ -507,6 +577,11 @@ def report_activities():
 @login_required
 def report_position():
     return render_template('report_position.html', data=rg.get_isak35_financial_position())
+
+@app.route('/reports/net-assets')
+@login_required
+def report_net_assets():
+    return render_template('report_net_assets.html', data=rg.get_changes_in_net_assets_report())
 
 @app.route('/reports/cash-flow')
 @login_required

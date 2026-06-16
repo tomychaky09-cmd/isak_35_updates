@@ -83,7 +83,7 @@ class DatabaseManager:
             else:
                 cursor = conn.cursor()
             cursor.execute(query, params)
-            res = cursor.fetchall() if fetch else None
+            res = cursor.fetchall() if fetch else True # Kembalikan True jika berhasil (bukan None)
             if commit: conn.commit()
             return res
         except Exception as e:
@@ -106,12 +106,47 @@ class DatabaseManager:
             "assets_inventory": f"CREATE TABLE IF NOT EXISTS assets_inventory (id {pk}, date VARCHAR(20), code VARCHAR(50) UNIQUE, name VARCHAR(255), location VARCHAR(255), estimated_value {real} DEFAULT 0, quantity INTEGER DEFAULT 1, description TEXT)",
             "cash_flow_categories": f"CREATE TABLE IF NOT EXISTS cash_flow_categories (id {pk}, name VARCHAR(255) UNIQUE, main_category VARCHAR(255))",
             "foundation_profile": f"CREATE TABLE IF NOT EXISTS foundation_profile (id INTEGER PRIMARY KEY CHECK (id = 1), name VARCHAR(255), address TEXT, leader_name VARCHAR(255), pembina_name VARCHAR(255), pengawas_name VARCHAR(255), logo_path TEXT, phone VARCHAR(50), email VARCHAR(100))",
-            "annual_report_settings": f"CREATE TABLE IF NOT EXISTS annual_report_settings (year INTEGER PRIMARY KEY, vision TEXT, mission TEXT, program_summary TEXT, program_detail_edu TEXT, program_detail_social TEXT, organizational_structure TEXT, evaluation_constraints TEXT, future_plans TEXT)"
+            "annual_report_settings": f"CREATE TABLE IF NOT EXISTS annual_report_settings (year INTEGER PRIMARY KEY, vision TEXT, mission TEXT, program_summary TEXT, program_detail_edu TEXT, program_detail_social TEXT, organizational_structure TEXT, evaluation_constraints TEXT, future_plans TEXT)",
+            "users": f"CREATE TABLE IF NOT EXISTS users (id {pk}, username VARCHAR(100) UNIQUE, password VARCHAR(255), role VARCHAR(50))",
+            "app_pages": f"CREATE TABLE IF NOT EXISTS app_pages (id {pk}, name VARCHAR(100) UNIQUE, route_name VARCHAR(100), category VARCHAR(100))",
+            "role_permissions": f"CREATE TABLE IF NOT EXISTS role_permissions (role VARCHAR(50), page_id INTEGER, is_allowed INTEGER DEFAULT 0, PRIMARY KEY (role, page_id))"
         }
         for _, q in tables.items():
             try: cursor.execute(q); conn.commit()
             except: pass
         
+        # Initial Seeding for Pages
+        initial_pages = [
+            ('Dashboard', 'dashboard', 'Utama'),
+            ('Chart of Accounts', 'coa_page', 'Master'),
+            ('Kategori Arus Kas', 'cf_cats_page', 'Master'),
+            ('Donatur', 'donors_page', 'Master'),
+            ('Inventaris Aset', 'assets_page', 'Master'),
+            ('Jurnal Umum', 'journals_page', 'Transaksi'),
+            ('Buku Besar', 'ledger_page', 'Laporan'),
+            ('Neraca Saldo', 'trial_balance', 'Laporan'),
+            ('Laporan Aktivitas', 'report_activities', 'Laporan'),
+            ('Laporan Posisi Keuangan', 'report_position', 'Laporan'),
+            ('Laporan Perubahan Aset', 'report_net_assets', 'Laporan'),
+            ('Laporan Arus Kas', 'report_cash_flow', 'Laporan'),
+            ('Laporan Tahunan', 'annual_report_page', 'Laporan'),
+            ('Ekspor Excel', 'export_excel', 'Sistem'),
+            ('Aksi Entri Jurnal (Dashboard)', 'dash_add_journal', 'Dashboard'),
+            ('Aksi Ekspor (Dashboard)', 'dash_export_excel', 'Dashboard'),
+            ('Link Daftar Akun (Dashboard)', 'dash_link_coa', 'Dashboard'),
+            ('Link Donatur (Dashboard)', 'dash_link_donors', 'Dashboard'),
+            ('Panel Super Admin', 'super_admin_panel', 'Sistem')
+        ]
+        for name, route, cat in initial_pages:
+            try: cursor.execute("INSERT IGNORE INTO app_pages (name, route_name, category) VALUES (?, ?, ?)" if self.db_type == "mysql" else "INSERT OR IGNORE INTO app_pages (name, route_name, category) VALUES (?, ?, ?)", (name, route, cat))
+            except: pass
+        conn.commit()
+
+        # Default Super Admin user
+        try: cursor.execute("INSERT IGNORE INTO users (username, password, role) VALUES (?, ?, ?)" if self.db_type == "mysql" else "INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)", ('superadmin', 'super123', 'super_admin'))
+        except: pass
+        conn.commit()
+
         for col in ['program_detail_edu', 'program_detail_social', 'evaluation_constraints', 'future_plans']:
             try: cursor.execute(f"ALTER TABLE annual_report_settings ADD COLUMN {col} TEXT"); conn.commit()
             except: pass
@@ -230,9 +265,60 @@ class DatabaseManager:
     def update_foundation_profile(self, name, addr, leader, pembina, pengawas, phone, email):
         return self._execute_query("UPDATE foundation_profile SET name=?, address=?, leader_name=?, pembina_name=?, pengawas_name=?, phone=?, email=? WHERE id=1", (name, addr, leader, pembina, pengawas, phone, email), commit=True)
 
+    # --- USERS & RBAC ---
     def verify_login(self, u, p):
-        if u == 'admin' and p == 'admin123': return {'username': u, 'role': 'admin'}
+        # Fallback untuk login pertama kali jika tabel kosong (meskipun sudah diseed)
+        res = self._execute_query("SELECT id, username, role FROM users WHERE username=? AND password=?", (u, p), fetch=True)
+        if res: return {'id': res[0][0], 'username': res[0][1], 'role': res[0][2]}
         return None
+
+    def get_users(self):
+        return self._execute_query("SELECT id, username, role FROM users ORDER BY role, username", fetch=True)
+
+    def add_user(self, u, p, r):
+        return self._execute_query("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (u, p, r), commit=True)
+
+    def update_user(self, uid, u, p, r):
+        if p:
+            return self._execute_query("UPDATE users SET username=?, password=?, role=? WHERE id=?", (u, p, r, uid), commit=True)
+        return self._execute_query("UPDATE users SET username=?, role=? WHERE id=?", (u, r, uid), commit=True)
+
+    def delete_user(self, uid):
+        return self._execute_query("DELETE FROM users WHERE id=?", (uid,), commit=True)
+
+    def get_app_pages(self):
+        return self._execute_query("SELECT id, name, route_name, category FROM app_pages ORDER BY category, name", fetch=True)
+
+    def get_role_permissions(self, role):
+        # Ambil semua halaman dan status izin untuk role tertentu
+        q = """
+            SELECT p.id, p.name, p.category, COALESCE(rp.is_allowed, 0) as is_allowed 
+            FROM app_pages p 
+            LEFT JOIN role_permissions rp ON p.id = rp.page_id AND rp.role = ?
+            ORDER BY p.category, p.name
+        """
+        return self._execute_query(q, (role,), fetch=True)
+
+    def update_role_permission(self, role, page_id, is_allowed):
+        try:
+            # Gunakan _execute_query agar otomatis menangani perbedaan placeholder (? vs %s)
+            exists = self._execute_query("SELECT is_allowed FROM role_permissions WHERE role=? AND page_id=?", (role, page_id), fetch=True)
+            if exists is not None and len(exists) > 0:
+                return self._execute_query("UPDATE role_permissions SET is_allowed=? WHERE role=? AND page_id=?", (is_allowed, role, page_id), commit=True) is not None
+            else:
+                return self._execute_query("INSERT INTO role_permissions (role, page_id, is_allowed) VALUES (?, ?, ?)", (role, page_id, is_allowed), commit=True) is not None
+        except Exception as e:
+            print(f"RBAC Error: {e}")
+            return False
+
+    def get_permissions_dict(self, role):
+        if role == 'super_admin':
+            # Super Admin punya semua akses
+            pages = self.get_app_pages()
+            return {p[2]: True for p in pages}
+        
+        res = self._execute_query("SELECT p.route_name FROM role_permissions rp JOIN app_pages p ON rp.page_id = p.id WHERE rp.role=? AND rp.is_allowed=1", (role,), fetch=True)
+        return {r[0]: True for r in res} if res else {}
 
     def get_all_data_table_names(self):
         return ['journal_entries', 'journal_details', 'accounts', 'donors', 'assets_inventory', 'cash_flow_categories', 'annual_report_settings']

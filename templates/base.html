@@ -37,21 +37,24 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav d-lg-none mt-3 border-top pt-2">
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('journals_page') }}"><i class="fas fa-book me-2"></i>Jurnal Umum</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('ledger_page') }}"><i class="fas fa-book-open me-2"></i>Buku Besar</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('trial_balance') }}"><i class="fas fa-scale-balanced me-2"></i>Neraca Saldo</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>
+                {% if perms.get('dashboard') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>{% endif %}
+                {% if perms.get('coa_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun</a></li>{% endif %}
+                {% if perms.get('journals_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('journals_page') }}"><i class="fas fa-book me-2"></i>Jurnal Umum</a></li>{% endif %}
+                {% if perms.get('ledger_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('ledger_page') }}"><i class="fas fa-book-open me-2"></i>Buku Besar</a></li>{% endif %}
+                {% if perms.get('trial_balance') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('trial_balance') }}"><i class="fas fa-scale-balanced me-2"></i>Neraca Saldo</a></li>{% endif %}
+                {% if perms.get('assets_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>{% endif %}
+                {% if perms.get('donors_page') %}<li class="nav-item"><a class="nav-link" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>{% endif %}
+                
+                {% if perms.get('report_activities') or perms.get('report_position') or perms.get('report_cash_flow') %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Laporan ISAK 35</a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>
+                        {% if perms.get('report_activities') %}<li><a class="dropdown-item" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>{% endif %}
+                        {% if perms.get('report_position') %}<li><a class="dropdown-item" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>{% endif %}
+                        {% if perms.get('report_cash_flow') %}<li><a class="dropdown-item" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>{% endif %}
                     </ul>
                 </li>
+                {% endif %}
             </ul>
 
             <ul class="navbar-nav ms-auto align-items-lg-center">
@@ -62,10 +65,15 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-1"></i> {{ session['user']['username'] if session['user'] else 'Admin' }}
+                        <i class="fas fa-user-circle me-1"></i> {{ session['user']['username'] if session['user'] else 'Admin' }} 
+                        <span class="badge bg-light text-dark small ms-1" style="font-size: 0.6rem;">{{ user_role|upper }}</span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        {% if user_role == 'super_admin' %}
+                        <li><a class="dropdown-item" href="{{ url_for('super_admin_panel') }}"><i class="fas fa-shield-alt me-2 text-primary"></i>Panel Super Admin</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2 text-danger"></i>Logout</a></li>
                     </ul>
                 </li>
             </ul>
@@ -78,8 +86,11 @@
         <nav class="col-md-3 col-lg-2 d-none d-md-block sidebar shadow-sm">
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
+                    {% if perms.get('dashboard') %}
                     <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                    
+                    {% endif %}
+
+                    {% if perms.get('coa_page') or perms.get('cf_cats_page') or perms.get('assets_page') or perms.get('donors_page') %}
                     <hr class="mx-3 border-secondary opacity-25">
                     
                     <!-- DATA MASTER -->
@@ -89,51 +100,69 @@
                         </a>
                         <div class="collapse {% if '/coa' in request.path or '/assets' in request.path or '/donors' in request.path or '/cash-flow-cats' in request.path %}show{% endif %} ps-3" id="masterMenu">
                             <ul class="nav flex-column">
-                                <li><a class="nav-link py-1 small {% if '/coa' in request.path %}active{% endif %}" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun (COA)</a></li>
-                                <li><a class="nav-link py-1 small {% if '/cash-flow-cats' in request.path %}active{% endif %}" href="{{ url_for('cf_cats_page') }}"><i class="fas fa-tags me-2"></i>Kategori Arus Kas</a></li>
-                                <li><a class="nav-link py-1 small {% if '/assets' in request.path %}active{% endif %}" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>
-                                <li><a class="nav-link py-1 small {% if '/donors' in request.path %}active{% endif %}" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>
+                                {% if perms.get('coa_page') %}<li><a class="nav-link py-1 small {% if '/coa' in request.path %}active{% endif %}" href="{{ url_for('coa_page') }}"><i class="fas fa-list me-2"></i>Daftar Akun (COA)</a></li>{% endif %}
+                                {% if perms.get('cf_cats_page') %}<li><a class="nav-link py-1 small {% if '/cash-flow-cats' in request.path %}active{% endif %}" href="{{ url_for('cf_cats_page') }}"><i class="fas fa-tags me-2"></i>Kategori Arus Kas</a></li>{% endif %}
+                                {% if perms.get('assets_page') %}<li><a class="nav-link py-1 small {% if '/assets' in request.path %}active{% endif %}" href="{{ url_for('assets_page') }}"><i class="fas fa-boxes me-2"></i>Inventaris Aset</a></li>{% endif %}
+                                {% if perms.get('donors_page') %}<li><a class="nav-link py-1 small {% if '/donors' in request.path %}active{% endif %}" href="{{ url_for('donors_page') }}"><i class="fas fa-hand-holding-heart me-2"></i>Donatur</a></li>{% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
+                    {% if perms.get('journals_page') or perms.get('ledger_page') or perms.get('trial_balance') %}
                     <hr class="mx-3 border-secondary opacity-25">
 
                     <!-- TRANSAKSI -->
+                    {% if perms.get('journals_page') %}
                     <li class="nav-item">
                         <div class="d-flex align-items-center justify-content-between pe-2">
                             <a class="nav-link flex-grow-1 {% if '/journals' in request.path %}active{% endif %}" href="{{ url_for('journals_page') }}"><i class="fas fa-book me-2"></i>Jurnal Umum</a>
                             <a href="{{ url_for('add_journal') }}" class="text-white-50 p-1" title="Tambah Jurnal"><i class="fas fa-plus-circle"></i></a>
                         </div>
                     </li>
-                    <li class="nav-item"><a class="nav-link {% if '/ledger' in request.path %}active{% endif %}" href="{{ url_for('ledger_page') }}"><i class="fas fa-book-open me-2"></i>Buku Besar</a></li>
-                    <li class="nav-item"><a class="nav-link {% if '/trial-balance' in request.path %}active{% endif %}" href="{{ url_for('trial_balance') }}"><i class="fas fa-scale-balanced me-2"></i>Neraca Saldo</a></li>
-                    
+                    {% endif %}
+                    {% if perms.get('ledger_page') %}<li class="nav-item"><a class="nav-link {% if '/ledger' in request.path %}active{% endif %}" href="{{ url_for('ledger_page') }}"><i class="fas fa-book-open me-2"></i>Buku Besar</a></li>{% endif %}
+                    {% if perms.get('trial_balance') %}<li class="nav-item"><a class="nav-link {% if '/trial-balance' in request.path %}active{% endif %}" href="{{ url_for('trial_balance') }}"><i class="fas fa-scale-balanced me-2"></i>Neraca Saldo</a></li>{% endif %}
+                    {% endif %}
+
+                    {% if perms.get('report_activities') or perms.get('report_position') or perms.get('report_cash_flow') or perms.get('annual_report_page') %}
                     <hr class="mx-3 border-secondary opacity-25">
                     
                     <!-- LAPORAN -->
                     <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="collapse" href="#reportMenu"><i class="fas fa-file-invoice-dollar me-2"></i>Laporan Keuangan <i class="fas fa-chevron-down ms-1 small"></i></a>
-                        <div class="collapse {% if '/report-' in request.path or '/annual-report' in request.path %}show{% endif %} ps-3" id="reportMenu">
+                        <div class="collapse {% if '/report-' in request.path or '/annual-report' in request.path or '/reports/' in request.path %}show{% endif %} ps-3" id="reportMenu">
                             <ul class="nav flex-column">
-                                <li><a class="nav-link py-1 small" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>
-                                <li><a class="nav-link py-1 small" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>
-                                <li><a class="nav-link py-1 small" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>
-                                <li><a class="nav-link py-1 small" href="{{ url_for('annual_report_page') }}">Laporan Tahunan</a></li>
+                                {% if perms.get('report_activities') %}<li><a class="nav-link py-1 small" href="{{ url_for('report_activities') }}">Lap. Aktivitas</a></li>{% endif %}
+                                {% if perms.get('report_position') %}<li><a class="nav-link py-1 small" href="{{ url_for('report_position') }}">Lap. Posisi Keuangan</a></li>{% endif %}
+                                {% if perms.get('report_net_assets') %}<li><a class="nav-link py-1 small" href="{{ url_for('report_net_assets') }}">Lap. Perubahan Aset Neto</a></li>{% endif %}
+                                {% if perms.get('report_cash_flow') %}<li><a class="nav-link py-1 small" href="{{ url_for('report_cash_flow') }}">Lap. Arus Kas</a></li>{% endif %}
+                                {% if perms.get('annual_report_page') %}<li><a class="nav-link py-1 small" href="{{ url_for('annual_report_page') }}">Laporan Tahunan</a></li>{% endif %}
                             </ul>
                         </div>
                     </li>
+                    {% endif %}
 
-                    <li class="nav-item mt-auto">
+                    {% if user_role == 'super_admin' %}
+                    <hr class="mx-3 border-secondary opacity-25">
+                    <li class="nav-item">
+                        <a class="nav-link text-warning {% if '/super-admin' in request.path %}active{% endif %}" href="{{ url_for('super_admin_panel') }}">
+                            <i class="fas fa-shield-alt me-2"></i>Panel Super Admin
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link text-danger {% if '/reset' in request.path %}active{% endif %}" href="{{ url_for('reset_data_page') }}">
                             <i class="fas fa-trash-alt me-2"></i>Reset Data
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
+                {% if perms.get('export_excel') or user_role == 'super_admin' %}
                 <hr class="mx-3 border-secondary opacity-25">
                 <div class="px-3">
                     <a href="{{ url_for('export_excel') }}" class="btn btn-sm btn-info w-100 mb-3 text-white"><i class="fas fa-file-excel me-1"></i>Ekspor Laporan</a>
                 </div>
+                {% endif %}
             </div>
         </nav>
 

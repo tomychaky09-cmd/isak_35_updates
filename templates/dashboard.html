@@ -5,8 +5,12 @@
     <h1 class="h2">Ringkasan Dashboard Keuangan</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
+            {% if perms.get('dash_add_journal') or user_role == 'super_admin' %}
             <a href="{{ url_for('add_journal') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Entri Jurnal</a>
+            {% endif %}
+            {% if perms.get('dash_export_excel') or user_role == 'super_admin' %}
             <a href="{{ url_for('export_excel') }}" class="btn btn-sm btn-outline-success"><i class="fas fa-file-excel me-1"></i>Ekspor Laporan</a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -99,8 +103,21 @@
                 <p class="mb-2"><strong><i class="fas fa-user-tie me-2 text-success"></i>Pimpinan:</strong><br>{{ profile.leader_name }}</p>
                 <hr>
                 <div class="d-grid gap-2">
+                    {% if perms.get('dash_link_coa') or user_role == 'super_admin' %}
                     <a href="{{ url_for('coa_page') }}" class="btn btn-sm btn-outline-secondary text-start"><i class="fas fa-list me-2"></i>{{ total_accounts }} Daftar Akun</a>
+                    {% else %}
+                    <div class="btn btn-sm btn-outline-secondary text-start disabled opacity-75 border-secondary-subtle" style="cursor: default;">
+                        <i class="fas fa-list me-2"></i>{{ total_accounts }} Daftar Akun
+                    </div>
+                    {% endif %}
+
+                    {% if perms.get('dash_link_donors') or user_role == 'super_admin' %}
                     <a href="{{ url_for('donors_page') }}" class="btn btn-sm btn-outline-secondary text-start"><i class="fas fa-users me-2"></i>{{ total_donors }} Donatur</a>
+                    {% else %}
+                    <div class="btn btn-sm btn-outline-secondary text-start disabled opacity-75 border-secondary-subtle" style="cursor: default;">
+                        <i class="fas fa-users me-2"></i>{{ total_donors }} Donatur
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

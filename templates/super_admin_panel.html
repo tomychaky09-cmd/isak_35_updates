@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- USER MANAGEMENT -->
+        <div class="col-md-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users"></i> Manajemen User</h6>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-plus"></i> Tambah User
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>
+                                        <span class="badge {% if user.role == 'super_admin' %}bg-danger{% else %}bg-info{% endif %} text-white">
+                                            {{ user.role|upper }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.role != 'super_admin' %}
+                                        <button class="btn btn-warning btn-sm py-0" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">
+                                            <i class="fas fa-edit fa-xs"></i>
+                                        </button>
+                                        <a href="{{ url_for('delete_user', uid=user.id) }}" class="btn btn-danger btn-sm py-0" onclick="return confirm('Hapus user ini?')">
+                                            <i class="fas fa-trash fa-xs"></i>
+                                        </a>
+
+                                        <!-- Modal Edit -->
+                                        <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <form action="{{ url_for('edit_user', uid=user.id) }}" method="POST">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Edit User</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Username</label>
+                                                                <input type="text" name="username" class="form-control" value="{{ user.username }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Password Baru (Kosongkan jika tidak ganti)</label>
+                                                                <input type="password" name="password" class="form-control">
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Role</label>
+                                                                <select name="role" class="form-select">
+                                                                    {% for r in roles %}
+                                                                    <option value="{{ r }}" {% if user.role == r %}selected{% endif %}>{{ r|upper }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-primary">Simpan</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERMISSION MATRIX -->
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-shield-alt"></i> Pengaturan Hak Akses (RBAC)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light text-center">
+                                <tr>
+                                    <th rowspan="2" class="align-middle">Fitur / Halaman</th>
+                                    <th colspan="{{ roles|length }}">Role</th>
+                                </tr>
+                                <tr>
+                                    {% for r in roles %}
+                                    <th style="font-size: 0.8rem;">{{ r|upper }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set last_cat = "" %}
+                                {% for p in pages %}
+                                    {% if p.category != last_cat %}
+                                    <tr class="table-secondary">
+                                        <td colspan="{{ roles|length + 1 }}" class="font-weight-bold small py-1">{{ p.category }}</td>
+                                    </tr>
+                                    {% set last_cat = p.category %}
+                                    {% endif %}
+                                <tr>
+                                    <td class="small">{{ p.name }}</td>
+                                    {% for r in roles %}
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input permission-toggle" type="checkbox" 
+                                                   data-role="{{ r }}" data-page-id="{{ p.id }}"
+                                                   {% if matrix[r][p.id] %}checked{% endif %}>
+                                        </div>
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah User -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('add_user') }}" method="POST">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah User Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" class="form-select">
+                            {% for r in roles %}
+                            <option value="{{ r }}">{{ r|upper }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.permission-toggle').forEach(el => {
+    el.addEventListener('change', function() {
+        const role = this.dataset.role;
+        const pageId = this.dataset.pageId;
+        const isAllowed = this.checked;
+
+        fetch('{{ url_for("toggle_permission") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                role: role,
+                page_id: pageId,
+                is_allowed: isAllowed
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Gagal memperbarui izin!');
+                this.checked = !isAllowed;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
