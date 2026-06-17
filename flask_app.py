@@ -154,6 +154,32 @@ def delete_user(uid):
 def logout():
     session.pop('user', None); return redirect(url_for('login'))
 
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_p = request.form.get('old_password')
+        new_p = request.form.get('new_password')
+        confirm_p = request.form.get('confirm_password')
+        
+        # Verifikasi password lama
+        user = db.verify_login(session['user']['username'], old_p)
+        if not user:
+            flash('Password lama salah!', 'danger')
+        elif new_p != confirm_p:
+            flash('Konfirmasi password baru tidak cocok!', 'danger')
+        elif len(new_p) < 6:
+            flash('Password baru minimal 6 karakter!', 'warning')
+        else:
+            if db.change_password(session['user']['id'], new_p):
+                flash('Password berhasil diubah! Silakan login kembali.', 'success')
+                session.pop('user', None)
+                return redirect(url_for('login'))
+            else:
+                flash('Gagal mengubah password!', 'danger')
+                
+    return render_template('change_password.html')
+
 @app.route('/')
 @login_required
 def dashboard():

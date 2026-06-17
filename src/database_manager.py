@@ -2,6 +2,7 @@ import sqlite3
 import os
 import sys
 import json
+from werkzeug.security import generate_password_hash, check_password_hash
 
 try:
     import mysql.connector
@@ -267,21 +268,37 @@ class DatabaseManager:
 
     # --- USERS & RBAC ---
     def verify_login(self, u, p):
-        # Fallback untuk login pertama kali jika tabel kosong (meskipun sudah diseed)
-        res = self._execute_query("SELECT id, username, role FROM users WHERE username=? AND password=?", (u, p), fetch=True)
-        if res: return {'id': res[0][0], 'username': res[0][1], 'role': res[0][2]}
+        # Cari user berdasarkan username
+        res = self._execute_query("SELECT id, username, role, password FROM users WHERE username=?", (u,), fetch=True)
+        if res:
+            stored_p = res[0][3]
+            # 1. Cek dengan hash (Standar Baru)
+            try:
+                if check_password_hash(stored_p, p):
+                    return {'id': res[0][0], 'username': res[0][1], 'role': res[0][2]}
+            except: pass # Jika bukan format hash, lanjut ke plain check
+            
+            # 2. Cek plain text (Untuk Migrasi / Password Lama)
+            if stored_p == p:
+                return {'id': res[0][0], 'username': res[0][1], 'role': res[0][2]}
         return None
 
     def get_users(self):
         return self._execute_query("SELECT id, username, role FROM users ORDER BY role, username", fetch=True)
 
     def add_user(self, u, p, r):
-        return self._execute_query("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (u, p, r), commit=True)
+        hashed_p = generate_password_hash(p)
+        return self._execute_query("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (u, hashed_p, r), commit=True)
 
     def update_user(self, uid, u, p, r):
         if p:
-            return self._execute_query("UPDATE users SET username=?, password=?, role=? WHERE id=?", (u, p, r, uid), commit=True)
+            hashed_p = generate_password_hash(p)
+            return self._execute_query("UPDATE users SET username=?, password=?, role=? WHERE id=?", (u, hashed_p, r, uid), commit=True)
         return self._execute_query("UPDATE users SET username=?, role=? WHERE id=?", (u, r, uid), commit=True)
+
+    def change_password(self, uid, new_p):
+        hashed_p = generate_password_hash(new_p)
+        return self._execute_query("UPDATE users SET password=? WHERE id=?", (hashed_p, uid), commit=True)
 
     def delete_user(self, uid):
         return self._execute_query("DELETE FROM users WHERE id=?", (uid,), commit=True)
