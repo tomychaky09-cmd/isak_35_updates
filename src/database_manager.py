@@ -253,6 +253,9 @@ class DatabaseManager:
     def delete_cash_flow_category(self, name):
         return self._execute_query("DELETE FROM cash_flow_categories WHERE name=?", (name,), commit=True)
 
+    def update_cash_flow_category(self, cid, name, main_cat):
+        return self._execute_query("UPDATE cash_flow_categories SET name=?, main_category=? WHERE id=?", (name, main_cat, cid), commit=True)
+
     # --- DONORS & ASSETS ---
     def get_donors(self): return self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name", fetch=True)
 

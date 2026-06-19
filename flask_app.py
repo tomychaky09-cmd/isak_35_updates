@@ -541,6 +541,17 @@ def delete_cf_cat(name):
     flash('Kategori dihapus', 'success')
     return redirect(url_for('cf_cats_page'))
 
+@app.route('/cash-flow-cats/edit/<int:cid>', methods=['POST'])
+@login_required
+def edit_cf_cat(cid):
+    name = request.form.get('name')
+    main_cat = request.form.get('main_category')
+    if db.update_cash_flow_category(cid, name, main_cat):
+        flash('Kategori diperbarui', 'success')
+    else:
+        flash('Gagal memperbarui kategori', 'danger')
+    return redirect(url_for('cf_cats_page'))
+
 @app.route('/cash-flow-cats/import', methods=['POST'])
 @login_required
 def import_cf_cats():

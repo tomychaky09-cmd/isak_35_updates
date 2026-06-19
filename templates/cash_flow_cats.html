@@ -31,9 +31,6 @@
                         <label class="form-label">Pilih File (.xlsx) yang sudah diisi</label>
                         <input type="file" name="file" class="form-control" accept=".xlsx" required>
                     </div>
-                    <div class="alert alert-info py-2 small">
-                        <strong>Tips:</strong> Nama Kategori harus unik. Kategori Utama harus berisi salah satu: Operasi, Investasi, atau Pendanaan.
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -84,9 +81,42 @@
                             <td>{{ c.name }}</td>
                             <td><small class="text-muted">{{ c.main_category }}</small></td>
                             <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ c.id }}"><i class="fas fa-edit"></i></button>
                                 <a href="{{ url_for('delete_cf_cat', name=c.name) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus?')"><i class="fas fa-trash"></i></a>
                             </td>
                         </tr>
+
+                        <!-- Modal Edit -->
+                        <div class="modal fade" id="editModal{{ c.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <form method="POST" action="{{ url_for('edit_cf_cat', cid=c.id) }}">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Edit Kategori</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nama Kategori</label>
+                                                <input type="text" name="name" class="form-control" value="{{ c.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Jenis Aktivitas</label>
+                                                <select name="main_category" class="form-select">
+                                                    <option value="ARUS KAS DARI AKTIVITAS OPERASI" {% if c.main_category == 'ARUS KAS DARI AKTIVITAS OPERASI' %}selected{% endif %}>Aktivitas Operasi</option>
+                                                    <option value="ARUS KAS DARI AKTIVITAS INVESTASI" {% if c.main_category == 'ARUS KAS DARI AKTIVITAS INVESTASI' %}selected{% endif %}>Aktivitas Investasi</option>
+                                                    <option value="ARUS KAS DARI AKTIVITAS PENDANAAN" {% if c.main_category == 'ARUS KAS DARI AKTIVITAS PENDANAAN' %}selected{% endif %}>Aktivitas Pendanaan</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                         {% endfor %}
                     </tbody>
                 </table>
