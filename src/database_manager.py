@@ -244,10 +244,18 @@ class DatabaseManager:
         cols = ['date', 'description', 'reference_no', 'debit', 'credit']
         return [dict(zip(cols, row)) for row in res]
 
+    # --- KATEGORI ARUS KAS ---
     def get_cash_flow_categories(self): return self._execute_query("SELECT id, name, main_category FROM cash_flow_categories ORDER BY main_category, name", fetch=True)
+
+    def add_cash_flow_category(self, name, main_cat):
+        return self._execute_query("INSERT OR IGNORE INTO cash_flow_categories (name, main_category) VALUES (?, ?)" if self.db_type == "sqlite" else "INSERT IGNORE INTO cash_flow_categories (name, main_category) VALUES (?, ?)", (name, main_cat), commit=True)
+
+    def delete_cash_flow_category(self, name):
+        return self._execute_query("DELETE FROM cash_flow_categories WHERE name=?", (name,), commit=True)
 
     # --- DONORS & ASSETS ---
     def get_donors(self): return self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name", fetch=True)
+
     def add_donor(self, name, phone, address, t, desc): return self._execute_query("INSERT INTO donors (name, phone, address, donor_type, description) VALUES (?, ?, ?, ?, ?)", (name, phone, address, t, desc), commit=True)
     def update_donor(self, did, name, phone, address, t, desc): return self._execute_query("UPDATE donors SET name=?, phone=?, address=?, donor_type=?, description=? WHERE id=?", (name, phone, address, t, desc, did), commit=True)
     def delete_donor(self, did): return self._execute_query("DELETE FROM donors WHERE id=?", (did,), commit=True)
