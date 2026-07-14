@@ -48,6 +48,24 @@ class DatabaseManager:
         ]
         for q in tables: self._execute_query(q)
 
+        # Migrate role_permissions columns if they don't match the new schema
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA table_info(role_permissions)")
+            columns = [col[1] for col in cursor.fetchall()]
+            conn.close()
+            
+            if 'is_allowed' in columns and 'can_view' not in columns:
+                self._execute_query("ALTER TABLE role_permissions ADD COLUMN can_view INTEGER DEFAULT 0", commit=True)
+                self._execute_query("UPDATE role_permissions SET can_view = is_allowed", commit=True)
+            if 'can_edit' not in columns:
+                self._execute_query("ALTER TABLE role_permissions ADD COLUMN can_edit INTEGER DEFAULT 0", commit=True)
+            if 'can_delete' not in columns:
+                self._execute_query("ALTER TABLE role_permissions ADD COLUMN can_delete INTEGER DEFAULT 0", commit=True)
+        except Exception as e:
+            print(f"Migration Error on role_permissions: {e}")
+
         # Seed Laporan CALK page
         self._execute_query("INSERT OR IGNORE INTO app_pages (id, name, route_name, category) VALUES (?, ?, ?, ?)", (20, 'Laporan CALK', 'report_calk', 'Laporan'), commit=True)
         
