@@ -52,7 +52,7 @@ class DatabaseManager:
         self._execute_query("INSERT OR IGNORE INTO app_pages (id, name, route_name, category) VALUES (?, ?, ?, ?)", (20, 'Laporan CALK', 'report_calk', 'Laporan'), commit=True)
         
         # Seed default role permissions for Laporan CALK
-        for role in ['pembina', 'pengurus', 'pengawas', 'staf']:
+        for role in ['admin', 'pembina', 'bendahara', 'ketua', 'pengawas']:
             self._execute_query("INSERT OR IGNORE INTO role_permissions (role, page_id, can_view) VALUES (?, 20, 1)", (role,), commit=True)
             
         # Seed default CALK Notes if empty
