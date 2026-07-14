@@ -137,12 +137,19 @@
 <script>
 let activeType = 'All';
 
+// Jalankan saat halaman selesai dimuat untuk memulihkan filter terakhir yang aktif
+document.addEventListener('DOMContentLoaded', () => {
+    const savedFilter = localStorage.getItem('coa_active_filter') || 'All';
+    filterType(savedFilter);
+});
+
 function filterAccounts() {
     applyFilters();
 }
 
 function filterType(type) {
     activeType = type;
+    localStorage.setItem('coa_active_filter', type); // Simpan filter terpilih ke localStorage
     
     // Update active class on filter buttons
     const buttons = document.querySelectorAll('.filter-btn');
