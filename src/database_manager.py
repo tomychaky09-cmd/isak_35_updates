@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import json
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 class DatabaseManager:
     CONFIG_FILE = "user_settings.json"
@@ -214,6 +214,19 @@ class DatabaseManager:
     def get_role_permissions(self, role): return self._execute_query("SELECT p.id, p.name, p.category, COALESCE(rp.can_view, 0), COALESCE(rp.can_edit, 0), COALESCE(rp.can_delete, 0) FROM app_pages p LEFT JOIN role_permissions rp ON p.id = rp.page_id AND rp.role = ? ORDER BY p.category, p.name", (role,), fetch=True)
     def update_role_permission(self, role, page_id, action, is_allowed): return self._execute_query(f"UPDATE role_permissions SET {action}=? WHERE role=? AND page_id=?", (is_allowed, role, page_id), commit=True)
     def get_users(self): return self._execute_query("SELECT id, username, role FROM users ORDER BY role", fetch=True)
+    def add_user(self, u, p, r):
+        hashed_p = generate_password_hash(p)
+        return self._execute_query("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (u, hashed_p, r), commit=True)
+    def update_user(self, uid, u, p, r):
+        if p:
+            hashed_p = generate_password_hash(p)
+            return self._execute_query("UPDATE users SET username=?, password=?, role=? WHERE id=?", (u, hashed_p, r, uid), commit=True)
+        return self._execute_query("UPDATE users SET username=?, role=? WHERE id=?", (u, r, uid), commit=True)
+    def change_password(self, uid, new_p):
+        hashed_p = generate_password_hash(new_p)
+        return self._execute_query("UPDATE users SET password=? WHERE id=?", (hashed_p, uid), commit=True)
+    def delete_user(self, uid):
+        return self._execute_query("DELETE FROM users WHERE id=?", (uid,), commit=True)
     def verify_login(self, u, p):
         res = self._execute_query("SELECT id, username, role, password FROM users WHERE username=?", (u,), fetch=True)
         return {'id': res[0][0], 'username': res[0][1], 'role': res[0][2]} if res and (check_password_hash(res[0][3], p) or res[0][3] == p) else None
