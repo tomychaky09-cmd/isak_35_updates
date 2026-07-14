@@ -8,9 +8,7 @@ from datetime import datetime
 import tempfile
 from openpyxl import load_workbook, Workbook
 
-app = Flask(__name__, 
-            template_folder='templates',
-            static_folder='static')
+app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = 'isak35_secret_key'
 
 # --- BASIC HELPERS & DECORATORS ---
@@ -34,7 +32,6 @@ def create_excel_template(filename, headers, sheet_name="Template"):
     ws = wb.active
     ws.title = sheet_name
     ws.append(headers)
-    # Atur lebar kolom sedikit lebih luas
     for i in range(1, len(headers) + 1):
         ws.column_dimensions[chr(64 + i)].width = 20
     wb.save(output)
@@ -46,7 +43,6 @@ def create_excel_template(filename, headers, sheet_name="Template"):
 def download_template_journal():
     return create_excel_template('template_jurnal.xlsx', ['Tanggal (YYYY-MM-DD)', 'No Ref', 'Keterangan', 'Kode Akun', 'Debit', 'Kredit', 'Arus Kas (Opsional)'], "Jurnal")
 
-# --- ROUTES TEMPLATE ---
 @app.route('/download-template/coa')
 @login_required
 def download_template_coa():
@@ -82,13 +78,19 @@ def inject_db_info():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        u = request.form.get('username'); p = request.form.get('password')
+        u = request.form.get('username')
+        p = request.form.get('password')
         user = db.verify_login(u, p)
         if user: 
             session['user'] = user
             return redirect(url_for('dashboard'))
         flash('Username/Password salah!', 'danger')
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect(url_for('login'))
 
 # --- SUPER ADMIN PANEL ---
 @app.route('/super-admin')
@@ -101,13 +103,12 @@ def super_admin_panel():
     roles = ['admin', 'pembina', 'bendahara', 'ketua', 'pengawas']
     pages = to_dict_list(db.get_app_pages(), ['id', 'name', 'route_name', 'category'])
     
-    # Ambil matriks izin
     matrix = {}
     for r in roles:
         matrix[r] = {p['id']: False for p in pages}
         perms = db.get_role_permissions(r)
-        for p_id, p_name, p_cat, is_allowed in perms:
-            matrix[r][p_id] = True if is_allowed == 1 else False
+        for p_id, p_name, p_cat, can_view, can_edit, can_delete in perms:
+            matrix[r][p_id] = True if can_view == 1 else False
 
     return render_template('super_admin_panel.html', users=users, roles=roles, pages=pages, matrix=matrix)
 
@@ -119,10 +120,10 @@ def toggle_permission():
     
     data = request.json
     role = data.get('role')
-    page_id = int(data.get('page_id')) # Konversi ke integer
+    page_id = int(data.get('page_id'))
     is_allowed = 1 if data.get('is_allowed') else 0
     
-    success = db.update_role_permission(role, page_id, is_allowed)
+    success = db.update_role_permission(role, page_id, 'can_view', is_allowed)
     return jsonify({'success': success})
 
 @app.route('/super-admin/user/add', methods=['POST'])
@@ -150,10 +151,6 @@ def delete_user(uid):
     if db.delete_user(uid): flash('User berhasil dihapus', 'success')
     return redirect(url_for('super_admin_panel'))
 
-@app.route('/logout')
-def logout():
-    session.pop('user', None); return redirect(url_for('login'))
-
 @app.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
@@ -162,7 +159,6 @@ def change_password():
         new_p = request.form.get('new_password')
         confirm_p = request.form.get('confirm_password')
         
-        # Verifikasi password lama
         user = db.verify_login(session['user']['username'], old_p)
         if not user:
             flash('Password lama salah!', 'danger')
@@ -250,7 +246,11 @@ def edit_coa(aid):
 @app.route('/coa/delete/<int:aid>')
 @login_required
 def delete_coa(aid):
-    db.delete_account(aid); flash('Akun dihapus.', 'success'); return redirect(url_for('coa_page'))
+    if db.delete_account(aid):
+        flash('Akun dihapus.', 'success')
+    else:
+        flash('Gagal menghapus! Akun ini sudah memiliki riwayat transaksi di jurnal.', 'danger')
+    return redirect(url_for('coa_page'))
 
 @app.route('/coa/import', methods=['POST'])
 @login_required
@@ -271,9 +271,8 @@ def import_coa():
             
             imported_count = 0
             failed_count = 0
-            # Lewati header (baris 1)
             for row in ws.iter_rows(min_row=2, values_only=True):
-                if not row[0]: continue # Lewati baris kosong
+                if not row[0]: continue
                 try:
                     code = str(row[0])
                     name = str(row[1])
@@ -388,12 +387,11 @@ def import_journals():
             wb = load_workbook(file, data_only=True)
             ws = wb.active
             
-            # Map kode akun ke ID
             acc_map = {str(a['code']): a['id'] for a in to_dict_list(db.get_accounts(), ['id', 'code'])}
             
-            journal_groups = {} # Key: RefNo
+            journal_groups = {} 
             for row in ws.iter_rows(min_row=2, values_only=True):
-                if not row[1]: continue # Butuh RefNo
+                if not row[1]: continue 
                 
                 date_val = str(row[0])[:10] if row[0] else datetime.now().strftime('%Y-%m-%d')
                 ref = str(row[1])
@@ -419,7 +417,6 @@ def import_journals():
             
             imported_count = 0
             for ref, data in journal_groups.items():
-                # Validasi Balance
                 total_debit = sum(d['debit'] for d in data['details'])
                 total_credit = sum(d['credit'] for d in data['details'])
                 
@@ -576,7 +573,6 @@ def import_cf_cats():
                     name = str(row[0])
                     main_cat_raw = str(row[1]).upper() if row[1] else "OPERASI"
                     
-                    # Normalisasi kategori utama
                     main_cat = "ARUS KAS DARI AKTIVITAS OPERASI"
                     if "INVESTASI" in main_cat_raw: main_cat = "ARUS KAS DARI AKTIVITAS INVESTASI"
                     elif "PENDANAAN" in main_cat_raw: main_cat = "ARUS KAS DARI AKTIVITAS PENDANAAN"
@@ -625,6 +621,36 @@ def report_net_assets():
 def report_cash_flow():
     return render_template('report_cash_flow.html', data=rg.get_cash_flow_report()['report_data'])
 
+# --- CALK REPORT ---
+@app.route('/reports/calk')
+@login_required
+def report_calk():
+    user_perms = db.get_permissions_dict(session['user']['role'])
+    if not user_perms.get('report_calk') and session['user']['role'] != 'super_admin':
+        flash('Anda tidak memiliki izin untuk melihat laporan CALK.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    notes = to_dict_list(db.get_calk_notes(), ['id', 'section_title', 'content', 'updated_at'])
+    can_manage = user_perms.get('report_calk') or session['user']['role'] == 'super_admin'
+    return render_template('report_calk.html', notes=notes, can_manage=can_manage)
+
+@app.route('/reports/calk/update', methods=['POST'])
+@login_required
+def calk_update():
+    user_perms = db.get_permissions_dict(session['user']['role'])
+    if not user_perms.get('report_calk') and session['user']['role'] != 'super_admin':
+        flash('Anda tidak memiliki izin untuk mengedit CALK.', 'danger')
+        return redirect(url_for('dashboard'))
+        
+    note_id = request.form.get('id')
+    content = request.form.get('content')
+    if note_id and content is not None:
+        db.update_calk_note(note_id, content)
+        flash('Catatan CALK berhasil diperbarui.', 'success')
+    else:
+        flash('Gagal memperbarui Catatan CALK.', 'danger')
+    return redirect(url_for('report_calk'))
+
 @app.route('/settings/reset')
 @login_required
 def reset_data_page():
@@ -642,7 +668,6 @@ def reset_data_process():
     error_msgs = []
     
     try:
-        # Mapping nama dari form ke tabel DB
         table_map = {
             'journals': ['journal_details', 'journal_entries'],
             'accounts': ['accounts'],
@@ -659,7 +684,6 @@ def reset_data_process():
                 for table in table_map[key]:
                     try:
                         cursor.execute(f"DELETE FROM {table}")
-                        # Reset auto-increment jika di SQLite
                         if db.db_type == 'sqlite':
                             cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table}'")
                         success_count += 1
@@ -683,7 +707,6 @@ def reset_data_process():
 @login_required
 def backup_db():
     try:
-        # Gunakan path database yang sudah didefinisikan di awal (db.db_path)
         if os.path.exists(db.db_path):
             filename = f"backup_foundation_{datetime.now().strftime('%Y%m%d_%H%M')}.db"
             return send_file(db.db_path, as_attachment=True, download_name=filename)
@@ -708,13 +731,9 @@ def import_db():
 
     if file and file.filename.endswith('.db'):
         try:
-            # Pastikan folder database ada
             os.makedirs(os.path.dirname(db.db_path), exist_ok=True)
-            
-            # Ganti file database lama dengan yang baru
             file.save(db.db_path)
             
-            # Re-inisialisasi koneksi database agar menggunakan file baru
             from src.database_manager import DatabaseManager
             from src.report_generator import ReportGenerator
             db = DatabaseManager(db.db_path)
@@ -774,24 +793,45 @@ def export_excel():
         return send_file(file_path, as_attachment=True, download_name=f"Laporan_ISAK35_{datetime.now().strftime('%Y%m%d')}.xlsx")
     return "Gagal", 500
 
+# --- API STATS UNTUK GRAFIK DASHBOARD ---
 @app.route('/api/dashboard-stats')
 @login_required
 def dashboard_stats_api():
     try:
         data = db.get_journal_data_for_export()
         if not data: return jsonify({"labels": [], "income": [], "expense": []})
+        
         stats = {}
-        accs = {a['code']: a['type'] for a in to_dict_list(db.get_accounts(), ['id', 'code', 'name', 'type', 'category', 'notes'])}
-        rev = ['revenue', 'pendapatan', 'penerimaan']; exp = ['expense', 'beban', 'biaya', 'pengeluaran']
+        acc_list = to_dict_list(db.get_accounts(), ['id', 'code', 'name', 'type', 'category', 'notes'])
+        accs = {str(a['code']): str(a['type']).lower() for a in acc_list}
+        
+        rev_keys = ['revenue', 'pendapatan', 'penerimaan']
+        exp_keys = ['expense', 'beban', 'biaya', 'pengeluaran']
+        
         for r in data:
-            m = r['Tanggal'][:7]
+            date_val = str(r[0]) if r[0] else 'Unknown'
+            m = date_val[:7] 
+            
             if m not in stats: stats[m] = {'i': 0, 'e': 0}
-            t = str(accs.get(r['Kode Akun'], '')).lower()
-            if any(k in t for k in rev): stats[m]['i'] += (r['Kredit'] - r['Debit'])
-            elif any(k in t for k in exp): stats[m]['e'] += (r['Debit'] - r['Kredit'])
+            
+            t = accs.get(str(r[3]), '')
+            debit = float(r[5] or 0)
+            credit = float(r[6] or 0)
+            
+            if any(k in t for k in rev_keys): 
+                stats[m]['i'] += (credit - debit)
+            elif any(k in t for k in exp_keys): 
+                stats[m]['e'] += (debit - credit)
+        
         labels = sorted(stats.keys())[-6:]
-        return jsonify({"labels": labels, "income": [stats[l]['i'] for l in labels], "expense": [stats[l]['e'] for l in labels]})
-    except: return jsonify({"labels": [], "income": [], "expense": []})
+        return jsonify({
+            "labels": labels, 
+            "income": [stats[l]['i'] for l in labels], 
+            "expense": [stats[l]['e'] for l in labels]
+        })
+    except Exception as e:
+        print(f"Stats Error: {e}")
+        return jsonify({"labels": [], "income": [], "expense": []})
 
 # --- SYNC ---
 @app.route('/api/sync/pull', methods=['GET'])

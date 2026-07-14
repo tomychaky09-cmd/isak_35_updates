@@ -21,6 +21,7 @@ class AnnualReportPDF:
         add_or_replace_style(ParagraphStyle(name='TitleBold', fontSize=16, alignment=TA_CENTER, spaceAfter=2, fontName='Helvetica-Bold'))
         add_or_replace_style(ParagraphStyle(name='SubTitle', fontSize=10, alignment=TA_CENTER, spaceAfter=10, fontName='Helvetica'))
         add_or_replace_style(ParagraphStyle(name='Heading2', fontSize=12, spaceBefore=15, spaceAfter=10, fontName='Helvetica-Bold', color=colors.HexColor("#2C3E50")))
+        add_or_replace_style(ParagraphStyle(name='Heading3', fontSize=10, spaceBefore=8, spaceAfter=4, fontName='Helvetica-Bold', color=colors.HexColor("#2C3E50")))
         add_or_replace_style(ParagraphStyle(name='BodyTextIndent', fontSize=10, leftIndent=20, spaceAfter=5))
         add_or_replace_style(ParagraphStyle(name='TableCell', fontSize=9, fontName='Helvetica'))
         add_or_replace_style(ParagraphStyle(name='TableCellBold', fontSize=9, fontName='Helvetica-Bold'))
@@ -30,6 +31,42 @@ class AnnualReportPDF:
     def format_idr(self, value):
         if value is None: return "0"
         return "{:,.0f}".format(value).replace(",", ".")
+
+    def render_text_block_as_list(self, text, title=None):
+        if not text:
+            return []
+        
+        elements = []
+        if title:
+            elements.append(Paragraph(f"<b>{title}:</b>", self.styles['Normal']))
+            
+        lines = [l.strip() for l in text.replace('\r\n', '\n').split('\n') if l.strip()]
+        
+        # Determine if it's a numbered list or bullet list
+        # If most lines start with a digit followed by a dot, it's a numbered list
+        numbered_count = sum(1 for l in lines if l and l[0].isdigit() and (l.find('.') > 0 and l.find('.') < 3))
+        
+        is_numbered = numbered_count > len(lines) / 2
+        
+        items = []
+        for l in lines:
+            clean_line = l
+            if is_numbered:
+                dot_idx = l.find('.')
+                if dot_idx > 0 and dot_idx < 3:
+                    clean_line = l[dot_idx+1:].strip()
+            else:
+                if l.startswith('-') or l.startswith('*'):
+                    clean_line = l[1:].strip()
+            
+            items.append(ListItem(Paragraph(clean_line, self.styles['Normal'])))
+            
+        if items:
+            bullet_type = '1' if is_numbered else 'bullet'
+            elements.append(ListFlowable(items, bulletType=bullet_type, leftIndent=20))
+            elements.append(Spacer(1, 0.2*cm))
+            
+        return elements
 
     def generate(self, output_path):
         doc = SimpleDocTemplate(output_path, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
@@ -50,10 +87,7 @@ class AnnualReportPDF:
         
         mission_items = profile.get('mission', '')
         if mission_items:
-            # Menangani newline dari berbagai OS (\r\n atau \n)
-            lines = [l.strip() for l in mission_items.replace('\r\n', '\n').split('\n') if l.strip()]
-            misi_list = [ListItem(Paragraph(m, self.styles['Normal'])) for m in lines]
-            elements.append(ListFlowable(misi_list, bulletType='bullet', leftIndent=20))
+            elements.extend(self.render_text_block_as_list(mission_items))
         else:
             elements.append(Paragraph("-", self.styles['Normal']))
 
@@ -80,19 +114,14 @@ class AnnualReportPDF:
         # Ringkasan Umum
         perf_summary = self.data.get('performance', "")
         if perf_summary:
-            elements.append(Paragraph(perf_summary, self.styles['Normal']))
-            elements.append(Spacer(1, 0.3*cm))
-
+            elements.extend(self.render_text_block_as_list(perf_summary))
+            
         # Detail Program
         for title, key in [("Bidang Pendidikan", "program_edu"), ("Bidang Sosial & Keagamaan", "program_social")]:
             detail = self.data.get(key, "")
             if detail:
-                elements.append(Paragraph(f"<b>{title}:</b>", self.styles['Normal']))
-                lines = [l.strip() for l in detail.split('\n') if l.strip()]
-                items = [ListItem(Paragraph(l, self.styles['Normal'])) for l in lines]
-                elements.append(ListFlowable(items, bulletType='bullet', leftIndent=25))
-                elements.append(Spacer(1, 0.2*cm))
-
+                elements.extend(self.render_text_block_as_list(detail, title=title))
+ 
         elements.append(PageBreak())
 
         # 4. Laporan Keuangan (ISAK 35)
@@ -148,8 +177,35 @@ class AnnualReportPDF:
         elements.append(t_act)
         elements.append(Spacer(1, 0.5*cm))
 
-        # --- C. Laporan Arus Kas ---
-        elements.append(Paragraph("C. Laporan Arus Kas", self.styles['Normal']))
+        # --- C. Laporan Perubahan Aset Neto ---
+        elements.append(Paragraph("C. Laporan Perubahan Aset Neto", self.styles['Normal']))
+        elements.append(Spacer(1, 0.2*cm))
+        chg = self.data['financials'].get('changes_net_assets', [])
+        chg_data = [[
+            Paragraph("<b>DESKRIPSI</b>", self.styles['TableCellBold']),
+            Paragraph("<b>TANPA PEMBATASAN (RP)</b>", self.styles['TableCellBold']),
+            Paragraph("<b>DENGAN PEMBATASAN (RP)</b>", self.styles['TableCellBold']),
+            Paragraph("<b>TOTAL (RP)</b>", self.styles['TableCellBold'])
+        ]]
+        for row in chg:
+            chg_data.append([
+                Paragraph(row['description'], self.styles['TableCell']),
+                Paragraph(self.format_idr(row['without_restriction']), self.styles['TableNumber']),
+                Paragraph(self.format_idr(row['with_restriction']), self.styles['TableNumber']),
+                Paragraph(self.format_idr(row['total']), self.styles['TableNumber'])
+            ])
+        t_chg = Table(chg_data, colWidths=[7*cm, 3*cm, 3*cm, 3*cm])
+        t_chg.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F9F9F9")),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ]))
+        elements.append(t_chg)
+        elements.append(Spacer(1, 0.5*cm))
+
+        # --- D. Laporan Arus Kas ---
+        elements.append(Paragraph("D. Laporan Arus Kas", self.styles['Normal']))
         cf = self.data['financials']['cash_flow']
         cf_data = [[Paragraph("<b>AKTIVITAS</b>", self.styles['TableCellBold']), Paragraph("<b>JUMLAH (RP)</b>", self.styles['TableCellBold'])]]
         for row in cf:
@@ -164,6 +220,9 @@ class AnnualReportPDF:
             ('ALIGN', (1,0), (1,-1), 'RIGHT'),
         ]))
         elements.append(t_cf)
+        
+        # Tambahkan PageBreak sebelum Evaluasi & Rencana Tindak Lanjut agar rapi di halaman baru
+        elements.append(PageBreak())
 
         # 5. Evaluasi & Kendala
         elements.append(Paragraph("V. EVALUASI & RENCANA TINDAK LANJUT", self.styles['Heading2']))
@@ -195,7 +254,19 @@ class AnnualReportPDF:
         ]))
         elements.append(t_eval)
 
-        # 6. Signature Block
+        # 6. Catatan Atas Laporan Keuangan (CALK)
+        if 'calk' in self.data and self.data['calk']:
+            elements.append(PageBreak())
+            elements.append(Paragraph("VI. CATATAN ATAS LAPORAN KEUANGAN (CALK)", self.styles['Heading2']))
+            elements.append(Spacer(1, 0.3*cm))
+            for note in self.data['calk']:
+                elements.append(Paragraph(note['section_title'], self.styles['Heading3']))
+                elements.append(Spacer(1, 0.1*cm))
+                formatted_content = str(note['content'] or '').replace('\r\n', '<br/>').replace('\n', '<br/>')
+                elements.append(Paragraph(formatted_content, self.styles['Normal']))
+                elements.append(Spacer(1, 0.4*cm))
+
+        # 7. Signature Block
         elements.append(Spacer(1, 2*cm))
         
         def get_name(pos_name):

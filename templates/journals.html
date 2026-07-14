@@ -52,7 +52,43 @@
     </div>
 </div>
 
-<div class="card shadow-sm border-0" style="border-radius: 15px;">
+<!-- Filter Bar -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-center">
+            <!-- Pencarian Teks -->
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted mb-1">Cari Jurnal</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="searchFilter" class="form-control border-start-0 border-end" placeholder="Cari No. Ref atau Keterangan...">
+                </div>
+            </div>
+            
+            <!-- Program / Kategori Jurnal -->
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted mb-1">Kategori / Program</label>
+                <select id="programFilter" class="form-select">
+                    <option value="">Semua Program</option>
+                </select>
+            </div>
+            
+            <!-- Tanggal Mulai -->
+            <div class="col-md-2.5 col-sm-6">
+                <label class="form-label small fw-bold text-muted mb-1">Tanggal Mulai</label>
+                <input type="date" id="startDateFilter" class="form-control">
+            </div>
+            
+            <!-- Tanggal Selesai -->
+            <div class="col-md-2.5 col-sm-6">
+                <label class="form-label small fw-bold text-muted mb-1">Tanggal Selesai</label>
+                <input type="date" id="endDateFilter" class="form-control">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-5" style="border-radius: 15px;">
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -86,7 +122,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr>
+                    <tr class="no-data-row">
                         <td colspan="4" class="text-center text-muted py-4">Belum ada transaksi jurnal.</td>
                     </tr>
                     {% endfor %}
@@ -95,4 +131,142 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchFilter = document.getElementById('searchFilter');
+    const programFilter = document.getElementById('programFilter');
+    const startDateFilter = document.getElementById('startDateFilter');
+    const endDateFilter = document.getElementById('endDateFilter');
+    const tableBody = document.querySelector('table tbody');
+    const rows = Array.from(tableBody.querySelectorAll('tr:not(.no-data-row)'));
+    
+    // Restore text and date filters from sessionStorage
+    if (sessionStorage.getItem('journal_search_filter')) {
+        searchFilter.value = sessionStorage.getItem('journal_search_filter');
+    }
+    if (sessionStorage.getItem('journal_start_date_filter')) {
+        startDateFilter.value = sessionStorage.getItem('journal_start_date_filter');
+    }
+    if (sessionStorage.getItem('journal_end_date_filter')) {
+        endDateFilter.value = sessionStorage.getItem('journal_end_date_filter');
+    }
+    
+    // 1. Ekstrak Kategori Program dari No. Ref secara dinamis
+    const programs = new Set();
+    
+    rows.forEach(row => {
+        const refCell = row.cells[1].querySelector('code');
+        if (refCell) {
+            const refText = refCell.textContent.trim();
+            if (refText && refText !== '-') {
+                const parts = refText.split('-');
+                let prog = '';
+                if (parts.length >= 3) {
+                    prog = parts[1].toUpperCase(); // E.g., BKM-DKM-01 -> DKM
+                } else if (parts.length === 2) {
+                    prog = parts[0].toUpperCase(); // E.g., SA-2026 -> SA
+                } else {
+                    prog = parts[0].toUpperCase();
+                }
+                
+                if (prog) {
+                    programs.add(prog);
+                    row.setAttribute('data-program', prog);
+                }
+            }
+        }
+    });
+    
+    // 2. Isi dropdown filter program
+    Array.from(programs).sort().forEach(prog => {
+        const opt = document.createElement('option');
+        opt.value = prog;
+        opt.textContent = prog;
+        programFilter.appendChild(opt);
+    });
+    
+    // Restore program filter after options are populated
+    if (sessionStorage.getItem('journal_program_filter')) {
+        programFilter.value = sessionStorage.getItem('journal_program_filter');
+    }
+    
+    // 3. Tambahkan baris "Data tidak ditemukan" cadangan
+    const noDataRow = document.createElement('tr');
+    noDataRow.className = 'no-data-row d-none';
+    noDataRow.innerHTML = `<td colspan="4" class="text-center text-muted py-4">Data jurnal tidak ditemukan dengan filter tersebut.</td>`;
+    tableBody.appendChild(noDataRow);
+    
+    // 4. Fungsi Filter Utama
+    function applyFilters() {
+        const searchQuery = searchFilter.value.toLowerCase().trim();
+        const selectedProg = programFilter.value;
+        const startDate = startDateFilter.value ? new Date(startDateFilter.value) : null;
+        const endDate = endDateFilter.value ? new Date(endDateFilter.value) : null;
+        
+        // Simpan state filter ke sessionStorage
+        sessionStorage.setItem('journal_search_filter', searchFilter.value);
+        sessionStorage.setItem('journal_program_filter', programFilter.value);
+        sessionStorage.setItem('journal_start_date_filter', startDateFilter.value);
+        sessionStorage.setItem('journal_end_date_filter', endDateFilter.value);
+        
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const dateText = row.cells[0].textContent.trim();
+            const refCell = row.cells[1].querySelector('code');
+            const refText = refCell ? refCell.textContent.toLowerCase() : '';
+            const descText = row.cells[2].textContent.toLowerCase();
+            const rowProg = row.getAttribute('data-program') || '';
+            
+            // A. Cocokkan pencarian teks
+            const matchesSearch = !searchQuery || refText.includes(searchQuery) || descText.includes(searchQuery);
+            
+            // B. Cocokkan kategori program
+            const matchesProg = !selectedProg || rowProg === selectedProg;
+            
+            // C. Cocokkan tanggal
+            let matchesDate = true;
+            if (dateText && (startDate || endDate)) {
+                const rowDate = new Date(dateText);
+                rowDate.setHours(0,0,0,0);
+                
+                if (startDate) {
+                    const tempStart = new Date(startDate);
+                    tempStart.setHours(0,0,0,0);
+                    if (rowDate < tempStart) matchesDate = false;
+                }
+                if (endDate) {
+                    const tempEnd = new Date(endDate);
+                    tempEnd.setHours(0,0,0,0);
+                    if (rowDate > tempEnd) matchesDate = false;
+                }
+            }
+            
+            if (matchesSearch && matchesProg && matchesDate) {
+                row.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                row.classList.add('d-none');
+            }
+        });
+        
+        // Tampilkan baris "Data tidak ditemukan" jika semua disembunyikan
+        if (visibleCount === 0 && rows.length > 0) {
+            noDataRow.classList.remove('d-none');
+        } else {
+            noDataRow.classList.add('d-none');
+        }
+    }
+    
+    // Event Listeners
+    searchFilter.addEventListener('input', applyFilters);
+    programFilter.addEventListener('change', applyFilters);
+    startDateFilter.addEventListener('change', applyFilters);
+    endDateFilter.addEventListener('change', applyFilters);
+    
+    // Terapkan filter pertama kali (untuk merestore filter lama)
+    applyFilters();
+});
+</script>
 {% endblock %}

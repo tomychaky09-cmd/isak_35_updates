@@ -19,30 +19,30 @@
                 {% for r in data.revenue %}
                 <tr>
                     <td class="ps-5">{{ r.name }}</td>
-                    <td class="text-end pe-4">{{ "{:,.0f}".format(r.balance) }}</td>
+                    <td class="text-end pe-4">{{ "{:,.0f}".format(r.balance or 0) }}</td>
                 </tr>
                 {% endfor %}
                 <tr class="fw-bold">
                     <td class="ps-4">TOTAL PENDAPATAN</td>
-                    <td class="text-end pe-4 text-primary">{{ "{:,.0f}".format(data.total_rev) }}</td>
+                    <td class="text-end pe-4 text-primary">{{ "{:,.0f}".format(data.total_rev or 0) }}</td>
                 </tr>
 
                 <tr class="table-warning"><td colspan="2" class="ps-4 fw-bold">BEBAN</td></tr>
                 {% for e in data.expenses %}
                 <tr>
                     <td class="ps-5">{{ e.name }}</td>
-                    <td class="text-end pe-4">{{ "{:,.0f}".format(e.balance) }}</td>
+                    <td class="text-end pe-4">{{ "{:,.0f}".format(e.balance or 0) }}</td>
                 </tr>
                 {% endfor %}
                 <tr class="fw-bold">
                     <td class="ps-4">TOTAL BEBAN</td>
-                    <td class="text-end pe-4 text-danger">{{ "{:,.0f}".format(data.total_exp) }}</td>
+                    <td class="text-end pe-4 text-danger">{{ "{:,.0f}".format(data.total_exp or 0) }}</td>
                 </tr>
             </tbody>
             <tfoot class="table-dark">
                 <tr>
                     <td class="ps-4 fw-bold">PERUBAHAN ASET NETO (SURPLUS/DEFISIT)</td>
-                    <td class="text-end pe-4 fw-bold">{{ "{:,.0f}".format(data.total_change) }}</td>
+                    <td class="text-end pe-4 fw-bold">{{ "{:,.0f}".format(data.total_change or 0) }}</td>
                 </tr>
             </tfoot>
         </table>

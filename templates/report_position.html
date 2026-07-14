@@ -15,51 +15,48 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- ASET -->
                 <tr class="table-primary"><td colspan="2" class="ps-4 fw-bold">ASET</td></tr>
                 {% for a in data.assets %}
                 <tr>
                     <td class="ps-5">{{ a.name }}</td>
-                    <td class="text-end pe-4">{{ "{:,.0f}".format(a.balance) }}</td>
+                    <td class="text-end pe-4">{{ "{:,.0f}".format(a.balance or 0) }}</td>
                 </tr>
                 {% endfor %}
                 <tr class="fw-bold bg-light">
                     <td class="ps-4">TOTAL ASET</td>
-                    <td class="text-end pe-4 text-primary">{{ "{:,.0f}".format(data.total_assets) }}</td>
+                    <td class="text-end pe-4 text-primary">{{ "{:,.0f}".format(data.total_assets or 0) }}</td>
                 </tr>
 
-                <!-- LIABILITAS -->
                 <tr class="table-danger"><td colspan="2" class="ps-4 fw-bold">LIABILITAS</td></tr>
                 {% for l in data.liabilities %}
                 <tr>
                     <td class="ps-5">{{ l.name }}</td>
-                    <td class="text-end pe-4">{{ "{:,.0f}".format(l.balance) }}</td>
+                    <td class="text-end pe-4">{{ "{:,.0f}".format(l.balance or 0) }}</td>
                 </tr>
                 {% endfor %}
                 <tr class="fw-bold bg-light">
                     <td class="ps-4">TOTAL LIABILITAS</td>
-                    <td class="text-end pe-4 text-danger">{{ "{:,.0f}".format(data.total_liabilities) }}</td>
+                    <td class="text-end pe-4 text-danger">{{ "{:,.0f}".format(data.total_liabilities or 0) }}</td>
                 </tr>
 
-                <!-- ASET NETO -->
                 <tr class="table-success"><td colspan="2" class="ps-4 fw-bold">ASET NETO</td></tr>
                 <tr>
                     <td class="ps-5">Tanpa Pembatasan</td>
-                    <td class="text-end pe-4">{{ "{:,.0f}".format(data.net_assets_without) }}</td>
+                    <td class="text-end pe-4">{{ "{:,.0f}".format(data.net_assets_without or 0) }}</td>
                 </tr>
                 <tr>
                     <td class="ps-5">Dengan Pembatasan</td>
-                    <td class="text-end pe-4">{{ "{:,.0f}".format(data.net_assets_with) }}</td>
+                    <td class="text-end pe-4">{{ "{:,.0f}".format(data.net_assets_with or 0) }}</td>
                 </tr>
                 <tr class="fw-bold bg-light">
                     <td class="ps-4">TOTAL ASET NETO</td>
-                    <td class="text-end pe-4 text-success">{{ "{:,.0f}".format(data.total_net_assets) }}</td>
+                    <td class="text-end pe-4 text-success">{{ "{:,.0f}".format(data.total_net_assets or 0) }}</td>
                 </tr>
             </tbody>
             <tfoot class="table-dark">
                 <tr>
                     <td class="ps-4 fw-bold">TOTAL LIABILITAS DAN ASET NETO</td>
-                    <td class="text-end pe-4 fw-bold">{{ "{:,.0f}".format(data.total_liabilities_and_net_assets) }}</td>
+                    <td class="text-end pe-4 fw-bold">{{ "{:,.0f}".format(data.total_liabilities_and_net_assets or 0) }}</td>
                 </tr>
             </tfoot>
         </table>

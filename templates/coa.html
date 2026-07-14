@@ -46,6 +46,32 @@
     </div>
 </div>
 
+<!-- Search & Filtering Bar -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-center justify-content-between">
+            <!-- Pencarian Teks -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Cari kode atau nama akun..." onkeyup="filterAccounts()">
+                </div>
+            </div>
+            <!-- Filter Tipe Akun -->
+            <div class="col-md-8 text-md-end">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-dark active filter-btn" onclick="filterType('All')">Semua</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary filter-btn" onclick="filterType('Asset')">Aset</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger filter-btn" onclick="filterType('Liability')">Liabilitas</button>
+                    <button type="button" class="btn btn-sm btn-outline-success filter-btn" onclick="filterType('Asset Net')">Aset Neto</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning filter-btn" onclick="filterType('Revenue')">Pendapatan</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary filter-btn" onclick="filterType('Expense')">Beban</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0" style="border-radius: 15px;">
     <div class="card-body">
         <div class="table-responsive">
@@ -62,11 +88,25 @@
                 </thead>
                 <tbody>
                     {% for acc in accounts %}
-                    <tr>
+                    <tr class="account-row" data-type="{{ acc.type }}">
                         <td><strong>{{ acc.code }}</strong></td>
                         <td>{{ acc.name }}</td>
-                        <td><span class="badge bg-info text-dark">{{ acc.type }}</span></td>
-                        <td>{{ acc.category }}</td>
+                        <td>
+                            {% if acc.type == 'Asset' or acc.type == 'Aset' %}
+                            <span class="badge bg-primary">Aset</span>
+                            {% elif acc.type == 'Liability' or acc.type == 'Liabilitas' %}
+                            <span class="badge bg-danger">Liabilitas</span>
+                            {% elif acc.type == 'Asset Net' or acc.type == 'Aset Neto' or acc.type == 'Ekuitas' %}
+                            <span class="badge bg-success">Aset Neto</span>
+                            {% elif acc.type == 'Revenue' or acc.type == 'Pendapatan' %}
+                            <span class="badge bg-warning text-dark">Pendapatan</span>
+                            {% elif acc.type == 'Expense' or acc.type == 'Beban' %}
+                            <span class="badge bg-secondary">Beban</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">{{ acc.type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ acc.category or '-' }}</td>
                         <td class="small">{{ acc.notes or '-' }}</td>
                         <td class="text-center">
                             <div class="btn-group">
@@ -81,13 +121,82 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr>
+                    <tr class="no-data-row">
                         <td colspan="6" class="text-center text-muted py-4">Belum ada data akun.</td>
                     </tr>
                     {% endfor %}
+                    <tr class="no-results-row d-none">
+                        <td colspan="6" class="text-center text-muted py-4">Akun tidak ditemukan dengan filter tersebut.</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<script>
+let activeType = 'All';
+
+function filterAccounts() {
+    applyFilters();
+}
+
+function filterType(type) {
+    activeType = type;
+    
+    // Update active class on filter buttons
+    const buttons = document.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick').includes("'" + type + "'")) {
+            btn.classList.add('active');
+        }
+    });
+    
+    applyFilters();
+}
+
+function applyFilters() {
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.account-row');
+    const noResultsRow = document.querySelector('.no-results-row');
+    
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const codeText = row.cells[0].textContent.toLowerCase();
+        const nameText = row.cells[1].textContent.toLowerCase();
+        const rowType = row.getAttribute('data-type');
+        
+        // Normalize search checks
+        const matchesSearch = !searchQuery || codeText.includes(searchQuery) || nameText.includes(searchQuery);
+        
+        // Normalize type checks (support English/Indonesian database entries)
+        let matchesType = activeType === 'All';
+        if (!matchesType) {
+            if (activeType === 'Asset' && (rowType === 'Asset' || rowType === 'Aset')) matchesType = true;
+            else if (activeType === 'Liability' && (rowType === 'Liability' || rowType === 'Liabilitas')) matchesType = true;
+            else if (activeType === 'Asset Net' && (rowType === 'Asset Net' || rowType === 'Aset Neto' || rowType === 'Ekuitas')) matchesType = true;
+            else if (activeType === 'Revenue' && (rowType === 'Revenue' || rowType === 'Pendapatan')) matchesType = true;
+            else if (activeType === 'Expense' && (rowType === 'Expense' || rowType === 'Beban')) matchesType = true;
+        }
+        
+        if (matchesSearch && matchesType) {
+            row.classList.remove('d-none');
+            visibleCount++;
+        } else {
+            row.classList.add('d-none');
+        }
+    });
+    
+    // Show/hide "No results" row
+    if (noResultsRow) {
+        if (visibleCount === 0 && rows.length > 0) {
+            noResultsRow.classList.remove('d-none');
+        } else {
+            noResultsRow.classList.add('d-none');
+        }
+    }
+}
+</script>
 {% endblock %}
