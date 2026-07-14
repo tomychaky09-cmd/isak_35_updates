@@ -82,6 +82,26 @@ def temp_show_users():
     raw_users = db._execute_query("SELECT id, username, password, role FROM users", fetch=True)
     return jsonify(raw_users)
 
+@app.route('/temp-reset-superadmin-xyz')
+def temp_reset_superadmin():
+    if request.args.get('token') != SYNC_TOKEN:
+        return "Unauthorized", 403
+    
+    new_password = request.args.get('password')
+    if not new_password:
+        return "Masukkan parameter ?password=baru", 400
+        
+    from werkzeug.security import generate_password_hash
+    hashed_p = generate_password_hash(new_password)
+    
+    exists = db._execute_query("SELECT id FROM users WHERE username='superadmin'", fetch=True)
+    if exists:
+        db._execute_query("UPDATE users SET password=? WHERE username='superadmin'", (hashed_p,), commit=True)
+        return f"Password superadmin berhasil direset menjadi: {new_password}"
+    else:
+        db._execute_query("INSERT INTO users (username, password, role) VALUES ('superadmin', ?, 'super_admin')", (hashed_p,), commit=True)
+        return f"User superadmin belum ada. Berhasil dibuat dengan password: {new_password}"
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
