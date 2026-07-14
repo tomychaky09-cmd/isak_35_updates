@@ -66,8 +66,31 @@ class DatabaseManager:
         except Exception as e:
             print(f"Migration Error on role_permissions: {e}")
 
-        # Seed Laporan CALK page
-        self._execute_query("INSERT OR IGNORE INTO app_pages (id, name, route_name, category) VALUES (?, ?, ?, ?)", (20, 'Laporan CALK', 'report_calk', 'Laporan'), commit=True)
+        # Seed all standard app_pages if they don't exist
+        default_pages = [
+            (1, 'Dashboard', 'dashboard', 'Utama'),
+            (2, 'Chart of Accounts', 'coa_page', 'Master'),
+            (3, 'Kategori Arus Kas', 'cf_cats_page', 'Master'),
+            (4, 'Donatur', 'donors_page', 'Master'),
+            (5, 'Inventaris Aset', 'assets_page', 'Master'),
+            (6, 'Jurnal Umum', 'journals_page', 'Transaksi'),
+            (7, 'Buku Besar', 'ledger_page', 'Laporan'),
+            (8, 'Neraca Saldo', 'trial_balance', 'Laporan'),
+            (9, 'Laporan Aktivitas', 'report_activities', 'Laporan'),
+            (10, 'Laporan Posisi Keuangan', 'report_position', 'Laporan'),
+            (11, 'Laporan Perubahan Aset', 'report_net_assets', 'Laporan'),
+            (12, 'Laporan Arus Kas', 'report_cash_flow', 'Laporan'),
+            (13, 'Laporan Tahunan', 'annual_report_page', 'Laporan'),
+            (14, 'Ekspor Excel', 'export_excel', 'Sistem'),
+            (15, 'Aksi Entri Jurnal (Dashboard)', 'dash_add_journal', 'Dashboard'),
+            (16, 'Aksi Ekspor (Dashboard)', 'dash_export_excel', 'Dashboard'),
+            (17, 'Link Daftar Akun (Dashboard)', 'dash_link_coa', 'Dashboard'),
+            (18, 'Link Donatur (Dashboard)', 'dash_link_donors', 'Dashboard'),
+            (19, 'Panel Super Admin', 'super_admin_panel', 'Sistem'),
+            (20, 'Laporan CALK', 'report_calk', 'Laporan')
+        ]
+        for p_id, name, route_name, category in default_pages:
+            self._execute_query("INSERT OR IGNORE INTO app_pages (id, name, route_name, category) VALUES (?, ?, ?, ?)", (p_id, name, route_name, category), commit=True)
         
         # Seed default role permissions for Laporan CALK
         for role in ['admin', 'pembina', 'bendahara', 'ketua', 'pengawas']:
