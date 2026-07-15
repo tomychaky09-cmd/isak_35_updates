@@ -229,8 +229,12 @@ def coa_page():
 @login_required
 def add_coa():
     if request.method == 'POST':
-        db.add_account(request.form.get('code'), request.form.get('name'), request.form.get('type'), request.form.get('category'), request.form.get('notes'))
-        flash('Akun ditambahkan!', 'success'); return redirect(url_for('coa_page'))
+        success = db.add_account(request.form.get('code'), request.form.get('name'), request.form.get('type'), request.form.get('category'), request.form.get('notes'))
+        if success:
+            flash('Akun ditambahkan!', 'success')
+        else:
+            flash('Gagal menambahkan akun! Pastikan kode akun unik dan tidak duplikat.', 'danger')
+        return redirect(url_for('coa_page'))
     return render_template('coa_form.html')
 
 @app.route('/coa/edit/<int:aid>', methods=['GET', 'POST'])
@@ -239,8 +243,12 @@ def edit_coa(aid):
     accs = to_dict_list(db.get_accounts(), ['id', 'code', 'name', 'type', 'category', 'notes'])
     acc = next((x for x in accs if x['id'] == aid), None)
     if request.method == 'POST':
-        db.update_account(aid, request.form.get('code'), request.form.get('name'), request.form.get('type'), request.form.get('category'), request.form.get('notes'))
-        flash('Akun diperbarui!', 'success'); return redirect(url_for('coa_page'))
+        success = db.update_account(aid, request.form.get('code'), request.form.get('name'), request.form.get('type'), request.form.get('category'), request.form.get('notes'))
+        if success:
+            flash('Akun diperbarui!', 'success')
+        else:
+            flash('Gagal memperbarui akun! Pastikan kode akun unik dan tidak duplikat.', 'danger')
+        return redirect(url_for('coa_page'))
     return render_template('coa_form.html', account=acc)
 
 @app.route('/coa/delete/<int:aid>')
