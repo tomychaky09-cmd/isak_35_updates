@@ -38,7 +38,10 @@
                 </div>
             </div>
             <div class="mb-4">
-                <label class="form-label">Password</label>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Password</label>
+                    <a href="{{ url_for('forgot_password') }}" class="text-decoration-none small text-primary">Lupa Password?</a>
+                </div>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
                     <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password" required>

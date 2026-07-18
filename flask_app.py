@@ -92,6 +92,31 @@ def logout():
     session.pop('user', None)
     return redirect(url_for('login'))
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        token = request.form.get('token')
+        new_password = request.form.get('new_password')
+        
+        if token != SYNC_TOKEN:
+            flash('Token Pemulihan (Master Key) salah!', 'danger')
+            return render_template('forgot_password.html')
+            
+        user = db._execute_query("SELECT id FROM users WHERE username=?", (username,), fetch=True)
+        if not user:
+            flash('Username tidak ditemukan!', 'danger')
+            return render_template('forgot_password.html')
+            
+        uid = user[0][0]
+        if db.change_password(uid, new_password):
+            flash('Password berhasil direset! Silakan login dengan password baru.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Gagal mereset password. Silakan coba lagi.', 'danger')
+            
+    return render_template('forgot_password.html')
+
 # --- SUPER ADMIN PANEL ---
 @app.route('/super-admin')
 @login_required
