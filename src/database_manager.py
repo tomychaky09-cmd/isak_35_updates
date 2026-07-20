@@ -212,7 +212,15 @@ class DatabaseManager:
         return {r[0]: True for r in res} if res else {}
     def get_app_pages(self): return self._execute_query("SELECT id, name, route_name, category FROM app_pages", fetch=True)
     def get_role_permissions(self, role): return self._execute_query("SELECT p.id, p.name, p.category, COALESCE(rp.can_view, 0), COALESCE(rp.can_edit, 0), COALESCE(rp.can_delete, 0) FROM app_pages p LEFT JOIN role_permissions rp ON p.id = rp.page_id AND rp.role = ? ORDER BY p.category, p.name", (role,), fetch=True)
-    def update_role_permission(self, role, page_id, action, is_allowed): return self._execute_query(f"UPDATE role_permissions SET {action}=? WHERE role=? AND page_id=?", (is_allowed, role, page_id), commit=True)
+    def update_role_permission(self, role, page_id, action, is_allowed):
+        exists = self._execute_query("SELECT 1 FROM role_permissions WHERE role=? AND page_id=?", (role, page_id), fetch=True)
+        if exists:
+            return self._execute_query(f"UPDATE role_permissions SET {action}=? WHERE role=? AND page_id=?", (is_allowed, role, page_id), commit=True)
+        else:
+            can_v = is_allowed if action == 'can_view' else 0
+            can_e = is_allowed if action == 'can_edit' else 0
+            can_d = is_allowed if action == 'can_delete' else 0
+            return self._execute_query("INSERT INTO role_permissions (role, page_id, can_view, can_edit, can_delete) VALUES (?, ?, ?, ?, ?)", (role, page_id, can_v, can_e, can_d), commit=True)
     def get_users(self): return self._execute_query("SELECT id, username, role FROM users ORDER BY role", fetch=True)
     def add_user(self, u, p, r):
         hashed_p = generate_password_hash(p)

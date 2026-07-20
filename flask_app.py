@@ -151,6 +151,25 @@ def toggle_permission():
     success = db.update_role_permission(role, page_id, 'can_view', is_allowed)
     return jsonify({'success': success})
 
+@app.route('/super-admin/save-rbac', methods=['POST'])
+@login_required
+def save_rbac():
+    if session['user']['role'] != 'super_admin':
+        return redirect(url_for('dashboard'))
+    
+    roles = ['admin', 'pembina', 'bendahara', 'ketua', 'pengawas']
+    pages = db.get_app_pages()
+    
+    for r in roles:
+        for p in pages:
+            p_id = p[0]
+            key = f"perm_{r}_{p_id}"
+            is_allowed = 1 if request.form.get(key) else 0
+            db.update_role_permission(r, p_id, 'can_view', is_allowed)
+            
+    flash('Pengaturan Hak Akses (RBAC) berhasil disimpan!', 'success')
+    return redirect(url_for('super_admin_panel'))
+
 @app.route('/super-admin/user/add', methods=['POST'])
 @login_required
 def add_user():
