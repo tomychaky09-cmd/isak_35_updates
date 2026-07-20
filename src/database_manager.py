@@ -262,9 +262,36 @@ class DatabaseManager:
             'phone': '',
             'email': ''
         }
-    def get_cash_flow_categories(self): return self._execute_query("SELECT id, name, main_category FROM cash_flow_categories", fetch=True)
-    def get_donors(self): return self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors", fetch=True)
-    def get_assets_inventory(self): return self._execute_query("SELECT id, date, code, name, location, estimated_value, quantity, description FROM assets_inventory", fetch=True)
+    def update_foundation_profile(self, name, addr, leader, pembina, pengawas, phone, email):
+        return self._execute_query("UPDATE foundation_profile SET name=?, address=?, leader_name=?, pembina_name=?, pengawas_name=?, phone=?, email=? WHERE id=1", (name, addr, leader, pembina, pengawas, phone, email), commit=True)
+
+    # --- KATEGORI ARUS KAS ---
+    def get_cash_flow_categories(self): return self._execute_query("SELECT id, name, main_category FROM cash_flow_categories ORDER BY main_category, name", fetch=True)
+    def add_cash_flow_category(self, name, main_cat):
+        return self._execute_query("INSERT OR IGNORE INTO cash_flow_categories (name, main_category) VALUES (?, ?)" if self.db_type == "sqlite" else "INSERT IGNORE INTO cash_flow_categories (name, main_category) VALUES (?, ?)", (name, main_cat), commit=True)
+    def update_cash_flow_category(self, cid, name, main_cat):
+        return self._execute_query("UPDATE cash_flow_categories SET name=?, main_category=? WHERE id=?", (name, main_cat, cid), commit=True)
+    def delete_cash_flow_category(self, name):
+        return self._execute_query("DELETE FROM cash_flow_categories WHERE name=? OR id=?", (name, name), commit=True)
+
+    # --- DONORS ---
+    def get_donors(self): return self._execute_query("SELECT id, name, phone, address, donor_type, description FROM donors ORDER BY name", fetch=True)
+    def add_donor(self, name, phone, address, t, desc):
+        return self._execute_query("INSERT INTO donors (name, phone, address, donor_type, description) VALUES (?, ?, ?, ?, ?)", (name, phone, address, t, desc), commit=True)
+    def update_donor(self, did, name, phone, address, t, desc):
+        return self._execute_query("UPDATE donors SET name=?, phone=?, address=?, donor_type=?, description=? WHERE id=?", (name, phone, address, t, desc, did), commit=True)
+    def delete_donor(self, did):
+        return self._execute_query("DELETE FROM donors WHERE id=?", (did,), commit=True)
+
+    # --- ASSETS INVENTORY ---
+    def get_assets_inventory(self): return self._execute_query("SELECT id, date, code, name, location, estimated_value, quantity, description FROM assets_inventory ORDER BY date DESC", fetch=True)
+    def add_asset_inventory(self, date, code, name, loc, val, qty, desc):
+        return self._execute_query("INSERT INTO assets_inventory (date, code, name, location, estimated_value, quantity, description) VALUES (?, ?, ?, ?, ?, ?, ?)", (date, code, name, loc, val, qty, desc), commit=True)
+    def update_asset_inventory(self, aid, date, code, name, loc, val, qty, desc):
+        return self._execute_query("UPDATE assets_inventory SET date=?, code=?, name=?, location=?, estimated_value=?, quantity=?, description=? WHERE id=?", (date, code, name, loc, val, qty, desc, aid), commit=True)
+    def delete_asset_inventory(self, aid):
+        return self._execute_query("DELETE FROM assets_inventory WHERE id=?", (aid,), commit=True)
+
     def get_journal_data_for_export(self): return self._execute_query("SELECT je.date, je.description, je.reference_no, a.code, a.name, jd.debit, jd.credit, jd.cash_flow_activity FROM journal_details jd JOIN journal_entries je ON jd.journal_id=je.id JOIN accounts a ON jd.account_id=a.id", fetch=True)
 
     # --- CALK NOTES ---
